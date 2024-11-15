@@ -1,0 +1,6 @@
+pip~=23.2.1
+certifi~=2024.8.30
+urllib3~=2.2.3
+idna~=3.10
+charset-normalizer~=3.4.0
+requests~=2.32.3
