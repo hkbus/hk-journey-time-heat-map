@@ -37,7 +37,7 @@ function reload() {
         } finally {
             setLoading(false);
         }
-    }, 10);
+    }, 50);
 }
 
 function updateIntensitySliderValue(value) {
@@ -251,6 +251,7 @@ async function updateOrigin(lat = lastPosition[0], lng = lastPosition[1]) {
 
     heatmapLayer.setLatLngs(journeyTimesData);
     lastJourneyTimes = journeyTimesData;
+    lastJourneyTimesTree = new KDTree(journeyTimesData.map(([lat, lng], index) => ({lat: lat, lng: lng, index: index})), (a, b) => getDistanceFromLatLngInKm(a.lat, a.lng, b.lat, b.lng), ["lat", "lng"]);
 
     if (journeyTimesData.length > 0) {
         document.getElementById("export-button").disabled = false;
@@ -258,14 +259,22 @@ async function updateOrigin(lat = lastPosition[0], lng = lastPosition[1]) {
 }
 
 function getMinTimeAt(lat, lng) {
+    if (lastJourneyTimesTree === null) {
+        return null;
+    }
     let time = null;
-    for (const [stop_lat, stop_lng, journeyTime] of lastJourneyTimes) {
-        const distance = getDistanceFromLatLngInKm(lat, lng, stop_lat, stop_lng);
-        const walkable = distance <= walkableDistance;
-        const calculatedTime = journeyTime + calculateWalkTimeByDistance(distance);
-        if (walkable || calculateIntensityByTravelTime(calculatedTime) > 0) {
-            if (time === null || calculatedTime < time) {
-                time = calculatedTime;
+    const nearest = lastJourneyTimesTree.nearest({lat: lat, lng: lng}, 10);
+    for (const [nearby] of nearest) {
+        const data = lastJourneyTimes[nearby.index];
+        if (data) {
+            const [stop_lat, stop_lng, journeyTime] = data;
+            const distance = getDistanceFromLatLngInKm(lat, lng, stop_lat, stop_lng);
+            const walkable = distance <= walkableDistance;
+            const calculatedTime = journeyTime + calculateWalkTimeByDistance(distance);
+            if (walkable || calculateIntensityByTravelTime(calculatedTime) > 0) {
+                if (time === null || calculatedTime < time) {
+                    time = calculatedTime;
+                }
             }
         }
     }
@@ -321,6 +330,7 @@ loadJSON("./routeTimeList.min.json", dataSheet => {
 
 let lastPosition = null;
 let lastJourneyTimes = [];
+let lastJourneyTimesTree = null;
 
 let language = "zh";
 let modes = new Set(["kmb", "ctb", "nlb", "gmb", "mtr", "lightRail", "lrtfeeder", "hkkf", "sunferry", "fortuneferry"]);
@@ -357,7 +367,7 @@ map.on('click', (event) => {
         } finally {
             setLoading(false);
         }
-    }, 10);
+    }, 50);
 });
 
 map.on('mousemove', (event) => {
