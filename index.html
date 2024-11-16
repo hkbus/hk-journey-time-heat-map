@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HK Travel Time Heatmap</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.2/css/bulma.min.css" />
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="custom_heatmap_leaflet.js"></script>
+    <script src="main.js" defer></script>
+</head>
+<body>
+    <div class="loader-container" id="loader" style="display: block;">
+        <div class="loader"></div>
+    </div>
+    <div class="hero is-fullheight">
+        <div class="box sidebar">
+            <div class="field">
+                <label class="label" for="language">地圖語言<br>Map Language</label>
+                <div class="control">
+                    <div class="select">
+                        <select name="language" id="language" onchange="reload();">
+                            <option value="zh">中文</option>
+                            <option value="en">English</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label">運輸方式過濾<br>Transportation Modes Filter</label>
+                <div class="control">
+                    <table class="modes-table prevent-select">
+                        <tr>
+                            <td><label class="checkbox"><input type="checkbox" name="modes" value="kmb" checked onchange="reload();"></label></td>
+                            <td onclick="flipCheckbox('kmb');">九巴</td>
+                            <td onclick="flipCheckbox('kmb');">KMB</td>
+                        </tr>
+                        <tr>
+                            <td><label class="checkbox"><input type="checkbox" name="modes" value="ctb" checked onchange="reload();"></label></td>
+                            <td onclick="flipCheckbox('ctb');">城巴</td>
+                            <td onclick="flipCheckbox('ctb');">Citybus</td>
+                        </tr>
+                        <tr>
+                            <td><label class="checkbox"><input type="checkbox" name="modes" value="nlb" checked onchange="reload();"></label></td>
+                            <td onclick="flipCheckbox('nlb');">嶼巴</td>
+                            <td onclick="flipCheckbox('nlb');">NLB</td>
+                        </tr>
+                        <tr>
+                            <td><label class="checkbox"><input type="checkbox" name="modes" value="gmb" checked onchange="reload();"></label></td>
+                            <td onclick="flipCheckbox('gmb');">專線小巴</td>
+                            <td onclick="flipCheckbox('gmb');">GMB</td>
+                        </tr>
+                        <tr>
+                            <td><label class="checkbox"><input type="checkbox" name="modes" value="mtr" checked onchange="reload();"></label></td>
+                            <td onclick="flipCheckbox('mtr');">港鐵</td>
+                            <td onclick="flipCheckbox('mtr');">MTR</td>
+                        </tr>
+                        <tr>
+                            <td><label class="checkbox"><input type="checkbox" name="modes" value="lightRail" checked onchange="reload();"></label></td>
+                            <td onclick="flipCheckbox('lightRail');">輕鐵</td>
+                            <td onclick="flipCheckbox('lightRail');">Light Rail</td>
+                        </tr>
+                        <tr>
+                            <td><label class="checkbox"><input type="checkbox" name="modes" value="lrtfeeder" checked onchange="reload();"></label></td>
+                            <td onclick="flipCheckbox('lrtfeeder');">港鐵巴士</td>
+                            <td onclick="flipCheckbox('lrtfeeder');">MTR Bus</td>
+                        </tr>
+                        <tr>
+                            <td><label class="checkbox"><input type="checkbox" name="modes" value="hkkf" checked onchange="reload();"></label></td>
+                            <td onclick="flipCheckbox('hkkf');">港九小輪</td>
+                            <td onclick="flipCheckbox('hkkf');">HKKF</td>
+                        </tr>
+                        <tr>
+                            <td><label class="checkbox"><input type="checkbox" name="modes" value="sunferry" checked onchange="reload();"></label></td>
+                            <td onclick="flipCheckbox('sunferry');">新渡輪</td>
+                            <td onclick="flipCheckbox('sunferry');">Sun Ferry</td>
+                        </tr>
+                        <tr>
+                            <td><label class="checkbox"><input type="checkbox" name="modes" value="fortuneferry" checked onchange="reload();"></label></td>
+                            <td onclick="flipCheckbox('fortuneferry');">富裕小輪</td>
+                            <td onclick="flipCheckbox('fortuneferry');">Fortune Ferry</td>
+                        </tr>
+                    </table>
+                    <button class="modes-toggle-button button is-small" onclick="toggleAllCheckboxes();">全選 Toggle All</button>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label" for="maxInterchanges">最多轉車次數<br>Max Interchanges</label>
+                <div class="control">
+                    <input type="number" class="input" id="maxInterchanges" name="maxInterchanges" min="0" max="3" value="1" onchange="reload();">
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label" for="intensityByTravelTimeMaxTime">最低熱度行程時間 (分鐘)<br>Min Intensity Travel Time (mins)</label>
+                <div class="control">
+                    <label class="input is-unselectable slider-value" id="intensityByTravelTimeMaxTimeValue">90</label>
+                    <input type="range" class="slider" id="intensityByTravelTimeMaxTime" name="intensityByTravelTimeMaxTime" min="5" max="180" value="90" step="5" onchange="reload();" oninput="updateIntensitySliderValue(value);">
+                </div>
+            </div>
+        </div>
+        <div class="map-container">
+            <div class="box info-box">
+                <span class="info-line">
+                    <b>所選地點 Selected Location</b><br>
+                    <label id="origin">點擊地圖選擇 Click Map</label><br>
+                </span>
+                <span class="info-line">
+                    <b>懸停位置 Hovering Location</b><br>
+                    <label id="hovering">-, -</label><br>
+                </span>
+                <span class="info-line">
+                    <b>懸停位置最快行程 Fastest Time</b><br>
+                    <label id="time">-</label> 分鐘 mins
+                </span>
+            </div>
+            <div id="map"></div>
+        </div>
+    </div>
+</body>
+</html>
