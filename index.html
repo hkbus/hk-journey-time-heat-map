@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HK Travel Time Heatmap</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.2/css/bulma.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css" />
     <link rel="stylesheet" href="style.css" />
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
     <script src="custom_heatmap_leaflet.js"></script>
@@ -102,6 +102,8 @@
                     <input type="range" class="slider" id="intensityByTravelTimeMaxTime" name="intensityByTravelTimeMaxTime" min="5" max="180" value="90" step="5" onchange="reload();" oninput="updateIntensitySliderValue(value);">
                 </div>
             </div>
+
+            <button class="export-button button is-info" id="export-button" onclick="exportGeoJson();" disabled>匯出數據點 Export Points (GeoJson)</button>
         </div>
         <div class="map-container">
             <div class="box info-box">

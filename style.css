@@ -124,6 +124,11 @@ html {
     margin-bottom: 10px;
 }
 
+.export-button {
+    width: 100%;
+    font-size: 15px;
+}
+
 .options-button {
     display: none;
     position: fixed;
