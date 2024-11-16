@@ -53,6 +53,7 @@ jobs:
           main.js \
           style.css \
           custom_heatmap_leaflet.js \
+          kdtree.js \
           build/
       - name: Update resources
         uses: JamesIves/github-pages-deploy-action@v4
