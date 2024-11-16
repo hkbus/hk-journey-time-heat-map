@@ -123,6 +123,17 @@ html {
     margin-bottom: 10px;
 }
 
+.options-button {
+    display: none;
+    position: fixed;
+    z-index: 99999;
+    right: 0;
+    bottom: 0;
+    margin: 10px 10px 42px 10px;
+    box-shadow: none;
+    border: 2px solid rgba(0, 0, 0, 0.2);
+}
+
 @media screen and (max-width: 700px) {
     .sidebar {
         width: 100%;
@@ -135,9 +146,12 @@ html {
         position: relative;
         left: 0;
         width: 100%;
-        height: 80vh;
+        height: calc(100vh + 3px);
     }
     .options-retract {
+        display: unset;
+    }
+    .options-button {
         display: unset;
     }
 }
