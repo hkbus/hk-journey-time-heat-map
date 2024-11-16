@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  Fetch-Route-Data:
+  Fetch-Time-Data:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,18 +23,18 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r ./requirements.txt
-      - name: Crawling resources
+      - name: Merging resources
         env:
           REQUEST_LIMIT: "6"
         run: |
           set -o xtrace
           python ./data_merging.py
 
-      - name: Archive crawling outputs
+      - name: Archive merging outputs
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: Crawled Files
+          name: Data Files
           retention-days: 14
           path: |
             routeTimeList.json
@@ -53,6 +53,7 @@ jobs:
           main.js \
           style.css \
           custom_heatmap_leaflet.js \
+          build/
       - name: Update resources
         uses: JamesIves/github-pages-deploy-action@v4
         with:
