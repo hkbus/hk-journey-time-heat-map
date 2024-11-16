@@ -2,6 +2,10 @@ html {
     overflow-y: auto;
 }
 
+.leaflet-container {
+    cursor: crosshair;
+}
+
 .loader-container {
     position: absolute;
     left: 0;
