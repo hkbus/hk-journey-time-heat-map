@@ -227,6 +227,8 @@ function mergeHeatmapData(map1, map2) {
 }
 
 async function updateOrigin(lat = lastPosition[0], lng = lastPosition[1]) {
+    document.getElementById("export-button").disabled = true;
+
     if (!routeList || !stopList || !lat || !lng) return;
     droppedPinLayer.clearLayers();
     L.marker([lat, lng]).addTo(droppedPinLayer);
@@ -249,6 +251,10 @@ async function updateOrigin(lat = lastPosition[0], lng = lastPosition[1]) {
 
     heatmapLayer.setLatLngs(journeyTimesData);
     lastJourneyTimes = journeyTimesData;
+
+    if (journeyTimesData.length > 0) {
+        document.getElementById("export-button").disabled = false;
+    }
 }
 
 function getMinTimeAt(lat, lng) {
@@ -264,6 +270,42 @@ function getMinTimeAt(lat, lng) {
         }
     }
     return time;
+}
+
+function exportGeoJson() {
+    if (!lastJourneyTimes) {
+        return
+    }
+    // Convert heatData to GeoJSON
+    const geojson = {
+        type: "FeatureCollection",
+        features: lastJourneyTimes
+            .map(([lat, lng, journeyTine]) => ({
+                type: "Feature",
+                properties: {
+                    intensity: calculateIntensityByTravelTime(journeyTine),
+                    journeyTine: journeyTine
+                },
+                geometry: {
+                    type: "Point",
+                    coordinates: [lng, lat],
+                },
+            }))
+            .filter(({ properties }) => properties.journeyTine < Number.MAX_SAFE_INTEGER),
+    };
+    // Download the GeoJSON file
+    const downloadGeoJSON = (geojson) => {
+        const blob = new Blob([JSON.stringify(geojson, null, 2)], {
+            type: "application/json",
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'points.geojson';
+        link.click();
+    };
+    // Call the download function
+    downloadGeoJSON(geojson);
 }
 
 // ==============================
