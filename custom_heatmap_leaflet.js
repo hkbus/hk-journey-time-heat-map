@@ -10,7 +10,7 @@
     "use strict";
 
     function t(i) {
-        return this instanceof t ? (this._canvas = i = "string" == typeof i ? document.getElementById(i) : i, this._ctx = i.getContext("2d"), this._width = i.width, this._height = i.height, this._max = 1, void this.clear()) : new t(i)
+        return this instanceof t ? (this._canvas = i = "string" == typeof i ? document.getElementById(i) : i, this._ctx = i.getContext("2d", {willReadFrequently: true}), this._width = i.width, this._height = i.height, this._max = 1, void this.clear()) : new t(i)
     }
     t.prototype = {
         defaultRadius: 25,
