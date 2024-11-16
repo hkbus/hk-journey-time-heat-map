@@ -38,6 +38,7 @@ html {
     height: 100%;
     overflow: auto;
     z-index: 100000;
+    border-radius: 0;
 }
 
 .sidebar .select {
