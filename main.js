@@ -255,9 +255,12 @@ function getMinTimeAt(lat, lng) {
     let time = null;
     for (const [stop_lat, stop_lng, journeyTime] of lastJourneyTimes) {
         const distance = getDistanceFromLatLngInKm(lat, lng, stop_lat, stop_lng);
+        const walkable = distance <= walkableDistance;
         const calculatedTime = journeyTime + calculateWalkTimeByDistance(distance);
-        if (time === null || calculatedTime < time) {
-            time = calculatedTime;
+        if (walkable || calculateIntensityByTravelTime(calculatedTime) > 0) {
+            if (time === null || calculatedTime < time) {
+                time = calculatedTime;
+            }
         }
     }
     return time;
@@ -318,9 +321,9 @@ map.on('click', (event) => {
 map.on('mousemove', (event) => {
     const { lat, lng } = event.latlng;
     document.getElementById("hovering").innerHTML = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-    let time = getMinTimeAt(lat, lng);
-    if (time) {
-        if (time < Number.MAX_SAFE_INTEGER) {
+    if (lastJourneyTimes.length > 0) {
+        let time = getMinTimeAt(lat, lng);
+        if (time && time < Number.MAX_SAFE_INTEGER) {
             document.getElementById("time").innerHTML = `~${Math.round(time / 60)}`;
         } else {
             document.getElementById("time").innerHTML = `N/A`;
