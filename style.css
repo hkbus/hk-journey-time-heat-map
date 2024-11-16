@@ -37,6 +37,7 @@ html {
     position: fixed;
     height: 100%;
     overflow: auto;
+    z-index: 100000;
 }
 
 .sidebar .select {
@@ -139,7 +140,6 @@ html {
         width: 100%;
         height: auto;
         position: relative;
-        z-index: 10000;
         margin: 0 !important;
     }
     .map-container {
