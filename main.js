@@ -37,7 +37,7 @@ function reload() {
         } finally {
             setLoading(false);
         }
-    }, 1);
+    }, 10);
 }
 
 function updateIntensitySliderValue(value) {
@@ -357,7 +357,7 @@ map.on('click', (event) => {
         } finally {
             setLoading(false);
         }
-    }, 1);
+    }, 10);
 });
 
 map.on('mousemove', (event) => {
