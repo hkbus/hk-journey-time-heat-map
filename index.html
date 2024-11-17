@@ -102,9 +102,19 @@
                     <label class="input is-unselectable slider-value" id="intensityByTravelTimeMaxTimeValue">90</label>
                     <input type="range" class="slider" id="intensityByTravelTimeMaxTime" name="intensityByTravelTimeMaxTime" min="10" max="180" value="90" step="5" onchange="reload();" oninput="updateIntensitySliderValue(value);">
                 </div>
-                <canvas class="heat-legend" id="heat-legend"></canvas>
+                <div class="heat-legend">
+                    <canvas class="heat-legend-canvas" id="heat-legend" style="filter: opacity(0.75);"></canvas>
+                </div>
                 <div class="heat-legend-text">
-                    <span>0</span><span>90</span><span>180</span>
+                    <span id="heat-legend-1">0</span><span id="heat-legend-2">45</span><span id="heat-legend-3">90</span><span id="heat-legend-4">135</span><span id="heat-legend-5">180</span>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label" for="maxTransparency">熱圖透明度<br>Heatmap Transparency</label>
+                <div class="control">
+                    <label class="input is-unselectable slider-value" id="maxTransparencyValue">0.75</label>
+                    <input type="range" class="slider" id="maxTransparency" name="maxTransparency" min="0" max="1" value="0.75" step="0.05" onchange="reload();" oninput="updateMaxTransparencyValue(value);">
                 </div>
             </div>
 
