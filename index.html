@@ -100,7 +100,11 @@
                 <label class="label" for="intensityByTravelTimeMaxTime">最低熱度行程時間 (分鐘)<br>Min Intensity Travel Time (mins)</label>
                 <div class="control">
                     <label class="input is-unselectable slider-value" id="intensityByTravelTimeMaxTimeValue">90</label>
-                    <input type="range" class="slider" id="intensityByTravelTimeMaxTime" name="intensityByTravelTimeMaxTime" min="5" max="180" value="90" step="5" onchange="reload();" oninput="updateIntensitySliderValue(value);">
+                    <input type="range" class="slider" id="intensityByTravelTimeMaxTime" name="intensityByTravelTimeMaxTime" min="10" max="180" value="90" step="5" onchange="reload();" oninput="updateIntensitySliderValue(value);">
+                </div>
+                <canvas class="heat-legend" id="heat-legend"></canvas>
+                <div class="heat-legend-text">
+                    <span>0</span><span>90</span><span>180</span>
                 </div>
             </div>
 

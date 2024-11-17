@@ -31,6 +31,7 @@ function reload() {
             modes = new Set(Array.from(document.querySelectorAll('input[name="modes"]:checked')).map(el => el.value));
             maxInterchanges = Number(document.getElementById("maxInterchanges").value);
             intensityByTravelTimeMaxTime = Number(document.getElementById("intensityByTravelTimeMaxTime").value);
+            updateHeatLegend();
             if (!lastPosition) return;
             const [lat, lng] = lastPosition;
             updateOrigin(lat, lng)
@@ -57,6 +58,20 @@ function toggleAllCheckboxes() {
     const newValue = !checkboxes.every(checkbox => checkbox.checked);
     checkboxes.forEach(checkbox => checkbox.checked = newValue);
     reload();
+}
+
+function updateHeatLegend() {
+    const heatLegend = document.getElementById("heat-legend");
+    const heatLegendContext = heatLegend.getContext("2d");
+    const grad= heatLegendContext.createLinearGradient(0,0, heatLegend.width,0);
+    const gradientEntries = Object.entries(gradient);
+    const shift = intensityByTravelTimeMaxTime / 180;
+    grad.addColorStop(0, gradientEntries[0][1]);
+    for (const [offset, color] of gradientEntries.slice(1)) {
+        grad.addColorStop((1 - Math.max(0, Math.min(1, Number(offset) * 0.8 - 0.1))) * shift, color);
+    }
+    heatLegendContext.fillStyle = grad;
+    heatLegendContext.fillRect(0,0, heatLegend.width, heatLegend.height);
 }
 
 function initMap() {
@@ -87,11 +102,11 @@ function getDistanceFromLatLngInKm(lat1, lng1, lat2, lng2) {
     const R = 6371; // Radius of the Earth in km
     const dLat = (lat2 - lat1) * (Math.PI / 180);
     const dLng = (lng2 - lng1) * (Math.PI / 180);
-    const a = 
+    const a =
         Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
-        Math.sin(dLng / 2) * Math.sin(dLng / 2); 
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); 
+        Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+        Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c; // Distance in km
 }
 
@@ -102,7 +117,7 @@ function findStopsWithinRadius(stopList, targetLat, targetLng, radiusKm) {
         if (stopList.hasOwnProperty(stopId)) {
             const stop = stopList[stopId];
             if (stop && stop.co.some(co => modes.has(co))) {
-                const { lat, lng } = stop.location;
+                const {lat, lng} = stop.location;
                 const distance = getDistanceFromLatLngInKm(targetLat, targetLng, lat, lng);
                 if (distance <= radiusKm) {
                     stopsWithinRadius.push({
@@ -129,7 +144,7 @@ async function generateHeatmapDataWithTravelDistance(stopList, routeList, startS
     const nextSeenRouts = [];
     for (const [routeKey, routeData] of Object.entries(routeList)) {
         if (seenRoutes.has(routeKey)) continue
-        const { co, stops } = routeData;
+        const {co, stops} = routeData;
         for (const operator of co) {
             if (stops && modes.has(operator)) {
                 const stopsByCo = stops[operator];
@@ -161,8 +176,8 @@ async function generateHeatmapDataWithTravelDistance(stopList, routeList, startS
     const heatmapData = {};
     const stopIdData = {};
     for (const stopSequence of stopSequenceList) {
-        const { stops } = stopSequence;
-        let { travelTime, interchangeCount } = startStops[stops[0]];
+        const {stops} = stopSequence;
+        let {travelTime, interchangeCount} = startStops[stops[0]];
 
         for (let index = 1; index < stops.length; index++) {
             const stopId = stops[index];
@@ -181,7 +196,7 @@ async function generateHeatmapDataWithTravelDistance(stopList, routeList, startS
 
     const nextStartStops = {};
     for (const stopSequence of stopSequenceList) {
-        const { stops, co } = stopSequence;
+        const {stops, co} = stopSequence;
         for (const stopId of stops) {
             const stop = stopList[stopId];
             const data = stopIdData[stopId];
@@ -193,7 +208,10 @@ async function generateHeatmapDataWithTravelDistance(stopList, routeList, startS
                 const interchangeTime = isTrain ? interchangeTimeForTrains : interchangeTimes;
                 const nextInterchangeCount = interchangeCount + (isTrain ? 0 : 1);
                 if (nextInterchangeCount < maxInterchanges) {
-                    nextStartStops[nearbyStopId] = {travelTime: time + interchangeTime, interchangeCount: nextInterchangeCount};
+                    nextStartStops[nearbyStopId] = {
+                        travelTime: time + interchangeTime,
+                        interchangeCount: nextInterchangeCount
+                    };
                 }
             }
             const isTrain = co === "mtr" || co === "lightRail";
@@ -239,7 +257,7 @@ async function updateOrigin(lat = lastPosition[0], lng = lastPosition[1]) {
 
     const startStops = {};
     stops.forEach((stop) => {
-        const { id, location, distance } = stop;
+        const {id, location, distance} = stop;
         const walkTime = calculateWalkTimeByDistance(distance);
         journeyTimesData.push([location.lat, location.lng, walkTime]);
         startStops[id] = {travelTime: walkTime, interchangeCount: 0};
@@ -251,7 +269,11 @@ async function updateOrigin(lat = lastPosition[0], lng = lastPosition[1]) {
 
     heatmapLayer.setLatLngs(journeyTimesData);
     lastJourneyTimes = journeyTimesData;
-    lastJourneyTimesTree = new KDTree(journeyTimesData.map(([lat, lng], index) => ({lat: lat, lng: lng, index: index})), (a, b) => getDistanceFromLatLngInKm(a.lat, a.lng, b.lat, b.lng), ["lat", "lng"]);
+    lastJourneyTimesTree = new KDTree(journeyTimesData.map(([lat, lng], index) => ({
+        lat: lat,
+        lng: lng,
+        index: index
+    })), (a, b) => getDistanceFromLatLngInKm(a.lat, a.lng, b.lat, b.lng), ["lat", "lng"]);
 
     if (journeyTimesData.length > 0) {
         document.getElementById("export-button").disabled = false;
@@ -300,7 +322,7 @@ function exportGeoJson() {
                     coordinates: [lng, lat],
                 },
             }))
-            .filter(({ properties }) => properties.journeyTine < Number.MAX_SAFE_INTEGER),
+            .filter(({properties}) => properties.journeyTine < Number.MAX_SAFE_INTEGER),
     };
     // Download the GeoJSON file
     const downloadGeoJSON = (geojson) => {
@@ -361,7 +383,7 @@ map.on('click', (event) => {
     setLoading(true);
     setTimeout(() => {
         try {
-            const { lat, lng } = event.latlng;
+            const {lat, lng} = event.latlng;
             lastPosition = [lat, lng];
             updateOrigin(lat, lng);
         } finally {
@@ -371,7 +393,7 @@ map.on('click', (event) => {
 });
 
 map.on('mousemove', (event) => {
-    const { lat, lng } = event.latlng;
+    const {lat, lng} = event.latlng;
     document.getElementById("hovering").innerHTML = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
     if (lastJourneyTimes.length > 0) {
         let time = getMinTimeAt(lat, lng);
