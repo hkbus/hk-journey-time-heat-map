@@ -31,6 +31,7 @@ function reload() {
             modes = new Set(Array.from(document.querySelectorAll('input[name="modes"]:checked')).map(el => el.value));
             maxInterchanges = Number(document.getElementById("maxInterchanges").value);
             intensityByTravelTimeMaxTime = Number(document.getElementById("intensityByTravelTimeMaxTime").value);
+            maxTransparency = Number(document.getElementById("maxTransparency").value);
             updateHeatLegend();
             if (!lastPosition) return;
             const [lat, lng] = lastPosition;
@@ -43,6 +44,11 @@ function reload() {
 
 function updateIntensitySliderValue(value) {
     document.getElementById('intensityByTravelTimeMaxTimeValue').innerHTML = value;
+}
+
+function updateMaxTransparencyValue(value) {
+    document.getElementById('maxTransparencyValue').innerHTML = value;
+    document.getElementById('heat-legend').style.filter = `opacity(${value})`;
 }
 
 function flipCheckbox(value) {
@@ -60,18 +66,25 @@ function toggleAllCheckboxes() {
     reload();
 }
 
-function updateHeatLegend() {
+function drawHeatLegend() {
     const heatLegend = document.getElementById("heat-legend");
     const heatLegendContext = heatLegend.getContext("2d");
     const grad= heatLegendContext.createLinearGradient(0,0, heatLegend.width,0);
     const gradientEntries = Object.entries(gradient);
-    const shift = intensityByTravelTimeMaxTime / 180;
     grad.addColorStop(0, gradientEntries[0][1]);
     for (const [offset, color] of gradientEntries.slice(1)) {
-        grad.addColorStop((1 - Math.max(0, Math.min(1, Number(offset) * 0.8 - 0.1))) * shift, color);
+        grad.addColorStop((1 - Math.max(0, Math.min(1, Number(offset) * 0.8 - 0.15))), color);
     }
     heatLegendContext.fillStyle = grad;
     heatLegendContext.fillRect(0,0, heatLegend.width, heatLegend.height);
+}
+
+function updateHeatLegend() {
+    document.getElementById("heat-legend-1").innerHTML = "0";
+    document.getElementById("heat-legend-2").innerHTML = `${intensityByTravelTimeMaxTime / 4}`;
+    document.getElementById("heat-legend-3").innerHTML = `${intensityByTravelTimeMaxTime / 2}`;
+    document.getElementById("heat-legend-4").innerHTML = `${intensityByTravelTimeMaxTime / 4 * 3}`;
+    document.getElementById("heat-legend-5").innerHTML = `${intensityByTravelTimeMaxTime}`;
 }
 
 function initMap() {
@@ -358,6 +371,7 @@ let language = "zh";
 let modes = new Set(["kmb", "ctb", "nlb", "gmb", "mtr", "lightRail", "lrtfeeder", "hkkf", "sunferry", "fortuneferry"]);
 let maxInterchanges = 1;
 let intensityByTravelTimeMaxTime = 90;
+let maxTransparency = 0.75;
 
 let walkingSpeedKmh = 5.1;
 let interchangeTimes = 900;
@@ -377,6 +391,7 @@ const gradient = {
     1.0: "red"
 }
 const heatmapLayer = L.heatLayer([], {radius: 20, blur: 20, maxZoom: 17, gradient: gradient}).addTo(map);
+drawHeatLegend();
 reload();
 
 map.on('click', (event) => {

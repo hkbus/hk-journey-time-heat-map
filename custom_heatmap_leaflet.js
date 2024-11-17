@@ -60,10 +60,10 @@
             for (var a, s = 3, e = t.length; e > s; s += 4) {
                 a = 4 * t[s];
                 if (a) {
-                    t[s - 3] = i[a];        // Red channel
-                    t[s - 2] = i[a + 1];    // Green channel
-                    t[s - 1] = i[a + 2];    // Blue channel
-                    t[s] *= 0.75;            // Cap the alpha channel
+                    t[s - 3] = i[a];         // Red channel
+                    t[s - 2] = i[a + 1];     // Green channel
+                    t[s - 1] = i[a + 2];     // Blue channel
+                    t[s] *= maxTransparency; // Cap the alpha channel
                 }
             }
         }
