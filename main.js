@@ -64,9 +64,11 @@ function updateHeatLegend() {
     const heatLegend = document.getElementById("heat-legend");
     const heatLegendContext = heatLegend.getContext("2d");
     const grad= heatLegendContext.createLinearGradient(0,0, heatLegend.width,0);
+    const gradientEntries = Object.entries(gradient);
     const shift = intensityByTravelTimeMaxTime / 180;
-    for (const [offset, color] of Object.entries(gradient)) {
-        grad.addColorStop((1 - Number(offset)) * shift, color);
+    grad.addColorStop(0, gradientEntries[0][1]);
+    for (const [offset, color] of gradientEntries.slice(1)) {
+        grad.addColorStop((1 - Math.max(0, Math.min(1, Number(offset) * 0.8 - 0.1))) * shift, color);
     }
     heatLegendContext.fillStyle = grad;
     heatLegendContext.fillRect(0,0, heatLegend.width, heatLegend.height);
