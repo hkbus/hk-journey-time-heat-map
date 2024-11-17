@@ -32,7 +32,7 @@ function reload() {
             maxInterchanges = Number(document.getElementById("maxInterchanges").value);
             intensityByTravelTimeMaxTime = Number(document.getElementById("intensityByTravelTimeMaxTime").value);
             maxTransparency = Number(document.getElementById("maxTransparency").value);
-            updateHeatLegend();
+            updateHeatLegend(intensityByTravelTimeMaxTime);
             if (!lastPosition) return;
             const [lat, lng] = lastPosition;
             updateOrigin(lat, lng)
@@ -44,6 +44,7 @@ function reload() {
 
 function updateIntensitySliderValue(value) {
     document.getElementById('intensityByTravelTimeMaxTimeValue').innerHTML = value;
+    updateHeatLegend(value);
 }
 
 function updateMaxTransparencyValue(value) {
@@ -79,12 +80,12 @@ function drawHeatLegend() {
     heatLegendContext.fillRect(0,0, heatLegend.width, heatLegend.height);
 }
 
-function updateHeatLegend() {
+function updateHeatLegend(value) {
     document.getElementById("heat-legend-1").innerHTML = "0";
-    document.getElementById("heat-legend-2").innerHTML = `${intensityByTravelTimeMaxTime / 4}`;
-    document.getElementById("heat-legend-3").innerHTML = `${intensityByTravelTimeMaxTime / 2}`;
-    document.getElementById("heat-legend-4").innerHTML = `${intensityByTravelTimeMaxTime / 4 * 3}`;
-    document.getElementById("heat-legend-5").innerHTML = `${intensityByTravelTimeMaxTime}`;
+    document.getElementById("heat-legend-2").innerHTML = `${value / 4}`;
+    document.getElementById("heat-legend-3").innerHTML = `${value / 2}`;
+    document.getElementById("heat-legend-4").innerHTML = `${value / 4 * 3}`;
+    document.getElementById("heat-legend-5").innerHTML = `${value}`;
 }
 
 function initMap() {
