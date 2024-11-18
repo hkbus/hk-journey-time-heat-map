@@ -98,6 +98,12 @@ html {
     width: 100%;
 }
 
+.note {
+    font-size: 12px;
+    line-height: 12px;
+    margin: 5px;
+}
+
 .prevent-select {
     -webkit-user-select: none; /* Safari */
     -ms-user-select: none; /* IE 10 and IE 11 */
@@ -141,7 +147,6 @@ html {
 .export-button {
     width: 100%;
     font-size: 15px;
-    margin-top: 10px;
 }
 
 .heat-legend {
