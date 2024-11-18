@@ -38,10 +38,6 @@ jobs:
           retention-days: 14
           path: |
             routeTimeList.min.json
-      - name: GZip Data
-        run: |
-          gzip -k -f -9 routeTimeList.min.json
-      - name: Update GZip Data Length
       - name: Update MD5
         run: |
           md5sum routeTimeList.min.json | cut -f1 -d ' ' | tr -d $'\n' > routeTimeList.md5
@@ -51,7 +47,6 @@ jobs:
         run: |
           cp \
           routeTimeList.min.json \
-          routeTimeList.min.json.gz \
           index.html \
           main.js \
           style.css \
