@@ -1,5 +1,11 @@
 function loadJSON(url, callback) {
-    fetch(url)
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept-Encoding': 'gzip',
+        },
+    })
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);
