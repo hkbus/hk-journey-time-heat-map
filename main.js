@@ -29,6 +29,20 @@ function reload() {
             language = document.getElementById("language").value;
             initMap();
             modes = new Set(Array.from(document.querySelectorAll('input[name="modes"]:checked')).map(el => el.value));
+            weekday = document.getElementById("weekday").value;
+            if (weekday === "N") {
+                hour = "N";
+                document.getElementById("hour").value = hour;
+                document.getElementById("hour").disabled = true;
+            } else {
+                document.getElementById("hour").disabled = false;
+                if (hour === "N") {
+                    hour = "00";
+                    document.getElementById("hour").value = hour;
+                } else {
+                    hour = document.getElementById("hour").value;
+                }
+            }
             maxInterchanges = Number(document.getElementById("maxInterchanges").value);
             intensityByTravelTimeMaxTime = Number(document.getElementById("intensityByTravelTimeMaxTime").value);
             maxTransparency = Number(document.getElementById("maxTransparency").value);
@@ -196,8 +210,19 @@ async function generateHeatmapDataWithTravelDistance(stopList, routeList, startS
         for (let index = 1; index < stops.length; index++) {
             const stopId = stops[index];
 
-            const data = journeyTimes[stops[index - 1]];
-            travelTime += data[stopId] !== undefined ? data[stopId] : Number.MAX_SAFE_INTEGER;
+            const journeyTimeData = journeyTimes[stops[index - 1]];
+            if (journeyTimeData[stopId] === undefined) {
+                travelTime += Number.MAX_SAFE_INTEGER;
+            } else {
+                const data = journeyTimeData[stopId];
+                if (weekday === "N") {
+                    travelTime += data["normal"] !== undefined ? data["normal"] : Number.MAX_SAFE_INTEGER;
+                } else if (data.hasOwnProperty(weekday) && data[weekday].hasOwnProperty(hour)) {
+                    travelTime += data[weekday][hour];
+                } else {
+                    travelTime += Number.MAX_SAFE_INTEGER;
+                }
+            }
 
             const stopInfo = stopList[stopId];
             if (stopInfo) {
@@ -299,7 +324,7 @@ function getMinTimeAt(lat, lng) {
         return null;
     }
     let time = null;
-    const nearest = lastJourneyTimesTree.nearest({lat: lat, lng: lng}, 10);
+    const nearest = lastJourneyTimesTree.nearest({lat: lat, lng: lng}, 30);
     for (const [nearby] of nearest) {
         const data = lastJourneyTimes[nearby.index];
         if (data) {
@@ -370,6 +395,8 @@ let lastJourneyTimesTree = null;
 
 let language = "zh";
 let modes = new Set(["kmb", "ctb", "nlb", "gmb", "mtr", "lightRail", "lrtfeeder", "hkkf", "sunferry", "fortuneferry"]);
+let weekday = "N";
+let hour = "N";
 let maxInterchanges = 1;
 let intensityByTravelTimeMaxTime = 90;
 let maxTransparency = 0.75;

@@ -10,13 +10,24 @@ def fetch_json(url):
 fetch_stop_journey_time_cache = {}
 
 def fetch_stop_journey_time(stop_id):
-    index = stop_id[:2] if len(stop_id) > 1 else stop_id  # Get the first 2 characters of stop ID for indexing
-    if index in fetch_stop_journey_time_cache:
-        return fetch_stop_journey_time_cache[index].get(stop_id, {})
-    url = f"https://timeinterval.hkbuseta.com/times/{index}.json"
+    if "normal" in fetch_stop_journey_time_cache:
+        return fetch_stop_journey_time_cache["normal"].get(stop_id, {})
+    url = f"https://timeinterval.hkbuseta.com/times/all.json"
     try:
         data = fetch_json(url)
-        fetch_stop_journey_time_cache[index] = data
+        fetch_stop_journey_time_cache["normal"] = data
+        return data.get(stop_id, {})  # Return only the relevant stop data
+    except requests.RequestException as error:
+        print(f"Error fetching data for stop {stop_id}: {error}")
+        return {}  # Return an empty object if there's an error
+
+def fetch_stop_journey_time_hourly(stop_id, weekday, hour):
+    if f"{weekday}/{hour}" in fetch_stop_journey_time_cache:
+        return fetch_stop_journey_time_cache[f"{weekday}/{hour}"].get(stop_id, {})
+    url = f"https://timeinterval.hkbuseta.com/times_hourly/{weekday}/{hour}/all.json"
+    try:
+        data = fetch_json(url)
+        fetch_stop_journey_time_cache[f"{weekday}/{hour}"] = data
         return data.get(stop_id, {})  # Return only the relevant stop data
     except requests.RequestException as error:
         print(f"Error fetching data for stop {stop_id}: {error}")
@@ -60,11 +71,38 @@ for route_key, route_data in route_list.items():
                 if stop not in stop_journey_times:
                     stop_journey_times[stop] = {}
                 journey_time = stop_journey_times[stop]
-                journey_time_list = fetch_stop_journey_time(stop)
-                if next_stop in journey_time_list:
-                    time = round(journey_time_list[next_stop], 2)
-                    if next_stop not in journey_time or journey_time[next_stop] > time:
-                        journey_time[next_stop] = time
+                journey_time_fetch_normal = fetch_stop_journey_time(stop)
+                if next_stop in journey_time_fetch_normal:
+                    time = round(journey_time_fetch_normal[next_stop], 2)
+                    if next_stop not in journey_time:
+                        journey_time[next_stop] = {"normal": time}
+                    elif "normal" not in journey_time[next_stop] or journey_time[next_stop]["normal"] > time:
+                        journey_time[next_stop]["normal"] = time
+                for weekday in range(7):
+                    for hour in range(24):
+                        hour_str = f"{hour:02d}"
+                        journey_time_fetch_hour = fetch_stop_journey_time_hourly(stop, weekday, hour_str)
+                        if next_stop in journey_time_fetch_hour:
+                            time = round(journey_time_fetch_hour[next_stop], 2)
+                            if next_stop not in journey_time:
+                                journey_time[next_stop] = {weekday: {hour_str: time}}
+                            elif weekday not in journey_time[next_stop]:
+                                journey_time[next_stop][weekday] = {hour_str: time}
+                            elif hour_str not in journey_time[next_stop][weekday] or journey_time[next_stop][weekday][hour_str] > time:
+                                journey_time[next_stop][weekday][hour_str] = time
+
+for stop_id, journey_time_data in stop_journey_times.items():
+    if "normal" in journey_time_data:
+        normal_time = journey_time_data["normal"]
+        for weekday in range(7):
+            for hour in range(24):
+                hour_str = f"{hour:02d}"
+                if weekday in journey_time_data and hour_str in journey_time_data[weekday]:
+                    hourly_time = journey_time_data[weekday][hour_str]
+                    if normal_time == hourly_time:
+                        del journey_time_data[weekday][hour_str]
+            if weekday in journey_time_data and len(journey_time_data[weekday]) <= 0:
+                del journey_time_data[weekday]
 
 for stop_id, stop in normalized_stop_list.items():
     stop["nearby"] = []

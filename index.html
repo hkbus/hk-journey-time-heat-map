@@ -90,6 +90,55 @@
             </div>
 
             <div class="field">
+                <label class="label" for="weekday">星期及小時<br>Weekday & Hour</label>
+                <div class="control">
+                    <div class="select">
+                        <select name="weekday" id="weekday" onchange="reload();">
+                            <option value="N">平均 Average</option>
+                            <option value="1">星期一 Monday</option>
+                            <option value="2">星期二 Tuesday</option>
+                            <option value="3">星期三 Wednesday</option>
+                            <option value="4">星期四 Thursday</option>
+                            <option value="5">星期五 Friday</option>
+                            <option value="6">星期六 Saturday</option>
+                            <option value="0">星期日及公眾假期 Sunday & Public Holidays</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="control">
+                    <label class="label" for="hour"></label>
+                    <div class="select">
+                        <select name="hour" id="hour" onchange="reload();">
+                            <option value="00">00:00</option>
+                            <option value="01">01:00</option>
+                            <option value="02">02:00</option>
+                            <option value="03">03:00</option>
+                            <option value="04">04:00</option>
+                            <option value="05">05:00</option>
+                            <option value="06">06:00</option>
+                            <option value="07">07:00</option>
+                            <option value="08">08:00</option>
+                            <option value="09">09:00</option>
+                            <option value="10">10:00</option>
+                            <option value="11">11:00</option>
+                            <option value="12">12:00</option>
+                            <option value="13">13:00</option>
+                            <option value="14">14:00</option>
+                            <option value="15">15:00</option>
+                            <option value="16">16:00</option>
+                            <option value="17">17:00</option>
+                            <option value="18">18:00</option>
+                            <option value="19">19:00</option>
+                            <option value="20">20:00</option>
+                            <option value="21">21:00</option>
+                            <option value="22">22:00</option>
+                            <option value="23">23:00</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field">
                 <label class="label" for="maxInterchanges">最多轉車次數<br>Max Interchanges</label>
                 <div class="control">
                     <input type="number" class="input" id="maxInterchanges" name="maxInterchanges" min="0" max="3" value="1" onchange="reload();">
@@ -119,6 +168,7 @@
             </div>
 
             <button class="export-button button is-info" id="export-button" onclick="exportGeoJson();" disabled>匯出數據點 Export Points (GeoJson)</button>
+            <p class="note">Note that it might require <b>ArcGis Pro</b> to recreate the look and feel of the heatmap if you are using ArcGis</p>
         </div>
         <div class="map-container">
             <div class="box info-box">
