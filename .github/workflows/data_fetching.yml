@@ -37,7 +37,6 @@ jobs:
           name: Data Files
           retention-days: 14
           path: |
-            routeTimeList.json
             routeTimeList.min.json
       - name: Update MD5
         run: |
@@ -47,7 +46,6 @@ jobs:
       - name: cp files into deployment folder
         run: |
           cp \
-          routeTimeList.json \
           routeTimeList.min.json \
           index.html \
           main.js \
