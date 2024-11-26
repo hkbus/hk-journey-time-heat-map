@@ -144,7 +144,13 @@ html {
     margin-bottom: 10px;
 }
 
-.export-button {
+.export-image-button {
+    width: 100%;
+    font-size: 15px;
+    margin-bottom: 10px;
+}
+
+.export-points-button {
     width: 100%;
     font-size: 15px;
 }
