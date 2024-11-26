@@ -35,6 +35,7 @@ function reload() {
             language = document.getElementById("language").value;
             initMap();
             modes = new Set(Array.from(document.querySelectorAll('input[name="modes"]:checked')).map(el => el.value));
+            direction = document.getElementById("direction").value;
             weekday = document.getElementById("weekday").value;
             if (weekday === "N") {
                 hour = "N";
@@ -176,13 +177,19 @@ function calculateIntensityByTravelTime(travelTime) {
 async function generateHeatmapDataWithTravelDistance(stopList, routeList, startStops, seenRoutes = new Set()) {
     const stopSequenceList = [];
     const nextSeenRouts = [];
+
+    const isArrivingAt = direction === "arriving-at";
+
     for (const [routeKey, routeData] of Object.entries(routeList)) {
         if (seenRoutes.has(routeKey)) continue
         const {co, stops} = routeData;
         for (const operator of co) {
             if (stops && modes.has(operator)) {
-                const stopsByCo = stops[operator];
+                let stopsByCo = stops[operator];
                 if (stopsByCo) {
+                    if (isArrivingAt) {
+                        stopsByCo = stopsByCo.toReversed();
+                    }
                     let highestIndex = -1;
                     for (const stopId of Object.keys(startStops)) {
                         const index = stopsByCo.indexOf(stopId);
@@ -216,11 +223,18 @@ async function generateHeatmapDataWithTravelDistance(stopList, routeList, startS
         for (let index = 1; index < stops.length; index++) {
             const stopId = stops[index];
 
-            const journeyTimeData = journeyTimes[stops[index - 1]];
-            if (journeyTimeData[stopId] === undefined) {
+            let jtFirstStopId = stops[index - 1];
+            let jtSecondStopId = stopId;
+            if (isArrivingAt) {
+                jtFirstStopId = stopId;
+                jtSecondStopId = stops[index - 1];
+            }
+
+            const journeyTimeData = journeyTimes[jtFirstStopId];
+            if (journeyTimeData[jtSecondStopId] === undefined) {
                 travelTime += Number.MAX_SAFE_INTEGER;
             } else {
-                const data = journeyTimeData[stopId];
+                const data = journeyTimeData[jtSecondStopId];
                 if (weekday === "N") {
                     travelTime += data["normal"] !== undefined ? data["normal"] : Number.MAX_SAFE_INTEGER;
                 } else if (data.hasOwnProperty(weekday) && data[weekday].hasOwnProperty(hour)) {
@@ -290,7 +304,8 @@ function mergeHeatmapData(map1, map2) {
 }
 
 async function updateOrigin(lat = lastPosition[0], lng = lastPosition[1]) {
-    document.getElementById("export-button").disabled = true;
+    document.getElementById("export-points-button").disabled = true;
+    document.getElementById("export-image-button").disabled = true;
 
     if (!routeList || !stopList || !lat || !lng) return;
     droppedPinLayer.clearLayers();
@@ -321,7 +336,8 @@ async function updateOrigin(lat = lastPosition[0], lng = lastPosition[1]) {
     })), (a, b) => getDistanceFromLatLngInKm(a.lat, a.lng, b.lat, b.lng), ["lat", "lng"]);
 
     if (journeyTimesData.length > 0) {
-        document.getElementById("export-button").disabled = false;
+        document.getElementById("export-points-button").disabled = false;
+        document.getElementById("export-image-button").disabled = false;
     }
 }
 
@@ -384,6 +400,27 @@ function exportGeoJson() {
     downloadGeoJSON(geojson);
 }
 
+function exportHeatmapAsImage() {
+    const width = heatmapLayer._heat._width;
+    const height = heatmapLayer._heat._height;
+    const { lat: latUpperLeft, lng: lngUpperLeft} = heatmapLayer._map.containerPointToLatLng([0, 0]);
+    const { lat: latUpperRight, lng: lngUpperRight} = heatmapLayer._map.containerPointToLatLng([width, 0]);
+    const { lat: latLowerLeft, lng: lngLowerLeft} = heatmapLayer._map.containerPointToLatLng([0, height]);
+    const { lat: latLowerRight, lng: lngLowerRight} = heatmapLayer._map.containerPointToLatLng([width, height]);
+    heatmapLayer._heat._canvas.toBlob(heatMapBlob => {
+        saveAs(heatMapBlob, "heatmap.png");
+
+        const meta = {
+            "UpperLeft": [latUpperLeft, lngUpperLeft],
+            "UpperRight": [latUpperRight, lngUpperRight],
+            "LowerLeft": [latLowerLeft, lngLowerLeft],
+            "LowerRight": [latLowerRight, lngLowerRight],
+        }
+        const metaBlob = new Blob([JSON.stringify(meta, null, 4)], {type: "text/plain;charset=utf-8"});
+        saveAs(metaBlob, "heatmap.json");
+    });
+}
+
 // ==============================
 
 let routeList = null;
@@ -401,6 +438,7 @@ let lastJourneyTimesTree = null;
 
 let language = "zh";
 let modes = new Set(["kmb", "ctb", "nlb", "gmb", "mtr", "lightRail", "lrtfeeder", "hkkf", "sunferry", "fortuneferry"]);
+let direction = "departing-from";
 let weekday = "N";
 let hour = "N";
 let maxInterchanges = 1;
