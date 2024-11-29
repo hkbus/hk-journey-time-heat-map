@@ -7,7 +7,10 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css" />
     <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
     <script src="custom_heatmap_leaflet.js"></script>
     <script src="kdtree.js"></script>
     <script src="filesaver.js"></script>
@@ -29,6 +32,14 @@
                         </select>
                     </div>
                 </div>
+            </div>
+
+            <div class="field">
+                <label class="label" for="basemapUrl">背景地圖連結<br>Basemap URL</label>
+                <div class="control">
+                    <input type="text" class="input" id="basemapUrl" name="basemapUrl" placeholder="正常 Default" onchange="reload();">
+                </div>
+                <p class="note">Placeholders: {x} {y} {z} {lang}: en/tc</p>
             </div>
 
             <div class="field">
@@ -152,9 +163,37 @@
             </div>
 
             <div class="field">
-                <label class="label" for="maxInterchanges">最多轉車次數<br>Max Interchanges</label>
+                <label class="label" for="maxInterchanges">最多轉車次數 (鐵路除外)<br>Max Interchanges (Excl. MTR)</label>
                 <div class="control">
                     <input type="number" class="input" id="maxInterchanges" name="maxInterchanges" min="0" max="3" value="1" onchange="reload();">
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label" for="walkingSpeed">步行速度 (公里/小時)<br>Walking Speed (km/h)</label>
+                <div class="control">
+                    <input type="number" class="input" id="walkingSpeed" name="walkingSpeed" min="0.1" max="10" value="5.1" step="0.1" onchange="reload();">
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label" for="walkableDistance">最遠步行距離 (公里)<br>Walkable Distance (km)</label>
+                <div class="control">
+                    <input type="number" class="input" id="walkableDistance" name="walkableDistance" min="0" max="10" value="1.5" step="0.1" onchange="reload();">
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label" for="interchangeTimes">轉車所需時間 (秒)<br>Interchange Times (secs)</label>
+                <div class="control">
+                    <input type="number" class="input" id="interchangeTimes" name="interchangeTimes" min="0" max="3600" value="900" step="15" onchange="reload();">
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label" for="interchangeTimesForTrains">鐵路轉車所需時間 (秒)<br>Interchange Times for MTR (secs)</label>
+                <div class="control">
+                    <input type="number" class="input" id="interchangeTimesForTrains" name="interchangeTimesForTrains" min="0" max="3600" value="90" step="15" onchange="reload();">
                 </div>
             </div>
 
