@@ -33,6 +33,7 @@ function reload() {
     setTimeout(() => {
         try {
             language = document.getElementById("language").value;
+            basemapUrl = document.getElementById("basemapUrl").value;
             initMap();
             modes = new Set(Array.from(document.querySelectorAll('input[name="modes"]:checked')).map(el => el.value));
             direction = document.getElementById("direction").value;
@@ -51,6 +52,10 @@ function reload() {
                 }
             }
             maxInterchanges = Number(document.getElementById("maxInterchanges").value);
+            walkingSpeedKmh = Number(document.getElementById("walkingSpeed").value);
+            walkableDistance = Number(document.getElementById("walkableDistance").value);
+            interchangeTimes = Number(document.getElementById("interchangeTimes").value);
+            interchangeTimeForTrains = Number(document.getElementById("interchangeTimesForTrains").value);
             intensityByTravelTimeMaxTime = Number(document.getElementById("intensityByTravelTimeMaxTime").value);
             maxTransparency = Number(document.getElementById("maxTransparency").value);
             updateHeatLegend(intensityByTravelTimeMaxTime);
@@ -111,13 +116,20 @@ function updateHeatLegend(value) {
 
 function initMap() {
     tileLayers.clearLayers();
-    L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/rastertiles/voyager_nolabels/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://api.portal.hkmapservice.gov.hk/disclaimer">HKSAR Gov</a>'
-    }).addTo(tileLayers);
-    L.tileLayer('https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/label/hk/{lang}/WGS84/{z}/{x}/{y}.png'.replace("{lang}", language === "en" ? "en" : "tc"), {
-        maxZoom: 19,
-    }).addTo(tileLayers);
+    if (basemapUrl) {
+        L.tileLayer(basemapUrl.replace("{lang}", language === "en" ? "en" : "tc"), {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(tileLayers);
+    } else {
+        L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/rastertiles/voyager_nolabels/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://api.portal.hkmapservice.gov.hk/disclaimer">HKSAR Gov</a>'
+        }).addTo(tileLayers);
+        L.tileLayer('https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/label/hk/{lang}/WGS84/{z}/{x}/{y}.png'.replace("{lang}", language === "en" ? "en" : "tc"), {
+            maxZoom: 19,
+        }).addTo(tileLayers);
+    }
 }
 
 // ==============================
@@ -199,6 +211,7 @@ async function generateHeatmapDataWithTravelDistance(stopList, routeList, startS
                     }
                     if (highestIndex >= 0) {
                         stopSequenceList.push({
+                            routeKey: routeKey,
                             stops: stopsByCo.slice(highestIndex, stopsByCo.length),
                             co: operator
                         });
@@ -216,9 +229,8 @@ async function generateHeatmapDataWithTravelDistance(stopList, routeList, startS
 
     const heatmapData = {};
     const stopIdData = {};
-    for (const stopSequence of stopSequenceList) {
-        const {stops} = stopSequence;
-        let {travelTime, interchangeCount} = startStops[stops[0]];
+    for (const {routeKey, stops} of stopSequenceList) {
+        let {travelTime, interchangeCount, steps} = startStops[stops[0]];
 
         for (let index = 1; index < stops.length; index++) {
             const stopId = stops[index];
@@ -247,8 +259,12 @@ async function generateHeatmapDataWithTravelDistance(stopList, routeList, startS
             const stopInfo = stopList[stopId];
             if (stopInfo) {
                 const location = stopInfo.location;
-                heatmapData[stopId] = [location.lat, location.lng, travelTime];
-                stopIdData[stopId] = {travelTime: travelTime, interchangeCount: interchangeCount};
+                const nextSteps = steps.slice();
+                const routeData = routeList[routeKey];
+                const route = `${routeData.co.join("/").toUpperCase()} ${routeData.route}`;
+                nextSteps.push({stopId: stopId, route: route});
+                heatmapData[stopId] = [location.lat, location.lng, travelTime, nextSteps];
+                stopIdData[stopId] = {travelTime: travelTime, interchangeCount: interchangeCount, steps: nextSteps};
             }
         }
     }
@@ -260,6 +276,7 @@ async function generateHeatmapDataWithTravelDistance(stopList, routeList, startS
             const stop = stopList[stopId];
             const data = stopIdData[stopId];
             const interchangeCount = data !== undefined ? data.interchangeCount : maxInterchanges;
+            const steps = data !== undefined ? data.steps : [];
             const time = data !== undefined ? data.travelTime : Number.MAX_SAFE_INTEGER;
             for (const nearbyStopId of stop.nearby) {
                 const nearbyStopCo = stopList[nearbyStopId].co;
@@ -269,7 +286,8 @@ async function generateHeatmapDataWithTravelDistance(stopList, routeList, startS
                 if (nextInterchangeCount < maxInterchanges) {
                     nextStartStops[nearbyStopId] = {
                         travelTime: time + interchangeTime,
-                        interchangeCount: nextInterchangeCount
+                        interchangeCount: nextInterchangeCount,
+                        steps: steps
                     };
                 }
             }
@@ -277,7 +295,11 @@ async function generateHeatmapDataWithTravelDistance(stopList, routeList, startS
             const interchangeTime = isTrain ? interchangeTimeForTrains : interchangeTimes;
             const nextInterchangeCount = interchangeCount + (isTrain ? 0 : 1);
             if (nextInterchangeCount < maxInterchanges) {
-                nextStartStops[stopId] = {travelTime: time + interchangeTime, interchangeCount: nextInterchangeCount};
+                nextStartStops[stopId] = {
+                    travelTime: time + interchangeTime,
+                    interchangeCount: nextInterchangeCount,
+                    steps: steps
+                };
             }
         }
     }
@@ -309,31 +331,67 @@ async function updateOrigin(lat = lastPosition[0], lng = lastPosition[1]) {
 
     if (!routeList || !stopList || !lat || !lng) return;
     droppedPinLayer.clearLayers();
+    transitPointLayer.clearLayers();
     L.marker([lat, lng]).addTo(droppedPinLayer);
     document.getElementById("origin").innerHTML = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
 
     const stops = findStopsWithinRadius(stopList, lat, lng, walkableDistance);
-    const journeyTimesData = [[lat, lng, 0]];
+    const journeyTimesData = [[lat, lng, 0, [{stopId: null, route: "walk"}]]];
+    const heatmapData = [[lat, lng, 0]];
 
     const startStops = {};
     stops.forEach((stop) => {
         const {id, location, distance} = stop;
         const walkTime = calculateWalkTimeByDistance(distance);
-        journeyTimesData.push([location.lat, location.lng, walkTime]);
-        startStops[id] = {travelTime: walkTime, interchangeCount: 0};
+        journeyTimesData.push([location.lat, location.lng, walkTime, [{stopId: id, route: "walk"}]]);
+        heatmapData.push([location.lat, location.lng, walkTime]);
+        startStops[id] = {travelTime: walkTime, interchangeCount: 0, steps: [{stopId: id, route: "walk"}]};
     });
     Object.values(await generateHeatmapDataWithTravelDistance(stopList, routeList, startStops)).forEach(stop => {
-        const [lat, lng, journeyTime] = stop;
-        journeyTimesData.push([lat, lng, journeyTime]);
+        const [lat, lng, journeyTime, steps] = stop;
+        heatmapData.push([lat, lng, journeyTime]);
+        journeyTimesData.push([lat, lng, journeyTime, steps]);
     });
 
-    heatmapLayer.setLatLngs(journeyTimesData);
+    heatmapLayer.setLatLngs(heatmapData);
     lastJourneyTimes = journeyTimesData;
     lastJourneyTimesTree = new KDTree(journeyTimesData.map(([lat, lng], index) => ({
         lat: lat,
         lng: lng,
         index: index
     })), (a, b) => getDistanceFromLatLngInKm(a.lat, a.lng, b.lat, b.lng), ["lat", "lng"]);
+
+    const markersMap = new Map();
+    for (const [, , , steps] of journeyTimesData) {
+        const stepRoutes = [];
+        for (const {stopId, route} of steps) {
+            if (stopId) {
+                const {name, location} = stopList[stopId];
+                const {lat, lng} = location;
+                const coordKey = `${lat},${lng}`;
+                stepRoutes.push(`${route} ${language === "en" ? "to" : "至"} ${name[language]}`);
+                const currentStepRoutes = stepRoutes.slice();
+                if (!markersMap.has(coordKey)) {
+                    markersMap.set(coordKey, { lat, lng, routes: [] });
+                }
+                markersMap.get(coordKey).routes.push(currentStepRoutes);
+            }
+        }
+    }
+    for (const { lat, lng, routes } of markersMap.values()) {
+        const marker = L.marker([lat, lng], { icon: redIcon }).addTo(transitPointLayer);
+        let popupContent = `<div style="text-align: center;">${Array.from(new Set(routes.map(r => r.join("<br>↓<br>")))).join('<br><br>')}</div>`;
+        if (language !== "en") {
+            popupContent = popupContent.replace("walk", "步行");
+        }
+        marker.bindPopup(popupContent);
+        marker.on('mouseover', () => {
+            marker.openPopup();
+        });
+        marker.on('mouseout', () => {
+            marker.closePopup();
+        });
+    }
 
     if (journeyTimesData.length > 0) {
         document.getElementById("export-points-button").disabled = false;
@@ -343,25 +401,27 @@ async function updateOrigin(lat = lastPosition[0], lng = lastPosition[1]) {
 
 function getMinTimeAt(lat, lng) {
     if (lastJourneyTimesTree === null) {
-        return null;
+        return {time: null, steps: []};
     }
     let time = null;
+    let steps = [];
     const nearest = lastJourneyTimesTree.nearest({lat: lat, lng: lng}, 30);
     for (const [nearby] of nearest) {
         const data = lastJourneyTimes[nearby.index];
         if (data) {
-            const [stop_lat, stop_lng, journeyTime] = data;
+            const [stop_lat, stop_lng, journeyTime, journeySteps] = data;
             const distance = getDistanceFromLatLngInKm(lat, lng, stop_lat, stop_lng);
             const walkable = distance <= walkableDistance;
             const calculatedTime = journeyTime + calculateWalkTimeByDistance(distance);
-            if (walkable || calculateIntensityByTravelTime(calculatedTime) > 0) {
+            if (walkable) {
                 if (time === null || calculatedTime < time) {
                     time = calculatedTime;
+                    steps = journeySteps;
                 }
             }
         }
     }
-    return time;
+    return {time: time, steps: steps};
 }
 
 function exportGeoJson() {
@@ -437,6 +497,7 @@ let lastJourneyTimes = [];
 let lastJourneyTimesTree = null;
 
 let language = "zh";
+let basemapUrl = "";
 let modes = new Set(["kmb", "ctb", "nlb", "gmb", "mtr", "lightRail", "lrtfeeder", "hkkf", "sunferry", "fortuneferry"]);
 let direction = "departing-from";
 let weekday = "N";
@@ -444,11 +505,19 @@ let hour = "N";
 let maxInterchanges = 1;
 let intensityByTravelTimeMaxTime = 90;
 let maxTransparency = 0.75;
-
 let walkingSpeedKmh = 5.1;
 let interchangeTimes = 900;
 let interchangeTimeForTrains = 90;
 let walkableDistance = 1.5;
+
+const redIcon = L.icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [12.5, 20.5],
+    iconAnchor: [6, 20.5],
+    popupAnchor: [0.5, -17],
+    shadowSize: [20.5, 20.5]
+});
 
 const map = L.map('map').setView([22.362458, 114.115333], 11);
 const tileLayers = L.layerGroup().addTo(map);
@@ -462,8 +531,12 @@ const gradient = {
     0.9: "yellow",
     1.0: "red"
 }
+
+const transitPointLayer = L.markerClusterGroup({spiderfyOnMaxZoom: false, disableClusteringAtZoom: 16}).addTo(map);
+
 const heatmapLayer = L.heatLayer([], {radius: 20, blur: 20, maxZoom: 17, gradient: gradient}).addTo(map);
 drawHeatLegend();
+
 reload();
 
 map.on('click', (event) => {
@@ -483,7 +556,7 @@ map.on('mousemove', (event) => {
     const {lat, lng} = event.latlng;
     document.getElementById("hovering").innerHTML = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
     if (lastJourneyTimes.length > 0) {
-        let time = getMinTimeAt(lat, lng);
+        let {time} = getMinTimeAt(lat, lng);
         if (time && time < Number.MAX_SAFE_INTEGER) {
             document.getElementById("time").innerHTML = `~${Math.round(time / 60)}`;
         } else {

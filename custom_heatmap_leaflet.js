@@ -124,7 +124,7 @@
             for (let x = -r; x < this._map._container.offsetWidth + r; x += cellSize) {
                 for (let y = -r; y < this._map._container.offsetHeight + r; y += cellSize) {
                     const {lat, lng} = this._map.containerPointToLatLng([x, y]);
-                    const time = getMinTimeAt(lat, lng);
+                    const {time} = getMinTimeAt(lat, lng);
                     if (time) {
                         const intensity = calculateIntensityByTravelTime(time);
                         if (intensity > 0) {
