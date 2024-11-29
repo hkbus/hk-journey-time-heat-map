@@ -58,6 +58,7 @@ function reload() {
             interchangeTimeForTrains = Number(document.getElementById("interchangeTimesForTrains").value);
             intensityByTravelTimeMaxTime = Number(document.getElementById("intensityByTravelTimeMaxTime").value);
             maxTransparency = Number(document.getElementById("maxTransparency").value);
+            clipToBoundaries = document.getElementById("boundaries").value === "true";
             updateHeatLegend(intensityByTravelTimeMaxTime);
             if (!lastPosition) return;
             const [lat, lng] = lastPosition;
@@ -130,6 +131,32 @@ function initMap() {
             maxZoom: 19,
         }).addTo(tileLayers);
     }
+}
+
+// ==============================
+
+function clipCanvasToPolygons(geojson, map, canvasContext) {
+    canvasContext.beginPath();
+    geojson.features.forEach(feature => {
+        const geometry = feature.geometry;
+        if (geometry.type === "Polygon" || geometry.type === "MultiPolygon") {
+            const coordinates = geometry.type === "Polygon" ? [geometry.coordinates] : geometry.coordinates;
+            coordinates.forEach(polygon => {
+                polygon.forEach(ring => {
+                    ring.forEach((coordinate, i) => {
+                        const [lng, lat] = coordinate;
+                        const { x, y } = map.latLngToContainerPoint([lat, lng]);
+                        if (i === 0) {
+                            canvasContext.moveTo(x, y);
+                        } else {
+                            canvasContext.lineTo(x, y);
+                        }
+                    });
+                });
+            });
+        }
+    });
+    canvasContext.clip();
 }
 
 // ==============================
@@ -489,10 +516,14 @@ function exportHeatmapAsImage() {
 let routeList = null;
 let stopList = null;
 let journeyTimes = null;
+let districtBoundaries = null;
 loadJSON("./routeTimeList.min.json", dataSheet => {
     routeList = dataSheet.routeList;
     stopList = dataSheet.stopList;
     journeyTimes = dataSheet.journeyTimes;
+});
+loadJSON("./district_boundaries.geojson", geoJson => {
+    districtBoundaries = geoJson;
 });
 
 let lastPosition = null;
@@ -512,6 +543,7 @@ let walkingSpeedKmh = 5.1;
 let interchangeTimes = 900;
 let interchangeTimeForTrains = 90;
 let walkableDistance = 1.5;
+let clipToBoundaries = false;
 
 const redIcon = L.icon({
     iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',

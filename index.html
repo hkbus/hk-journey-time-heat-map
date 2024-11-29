@@ -212,6 +212,18 @@
             </div>
 
             <div class="field">
+                <label class="label" for="boundaries">熱圖限於境內陸地<br>Clip Heatmap to Boundaries</label>
+                <div class="control">
+                    <div class="select">
+                        <select name="language" id="boundaries" onchange="reload();">
+                            <option value="true">啟用 Enabled</option>
+                            <option value="false">停用 Disabled</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field">
                 <label class="label" for="maxTransparency">熱圖透明度<br>Heatmap Transparency</label>
                 <div class="control">
                     <label class="input is-unselectable slider-value" id="maxTransparencyValue">0.75</label>

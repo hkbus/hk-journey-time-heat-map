@@ -29,7 +29,7 @@ jobs:
         run: |
           set -o xtrace
           python ./data_merging.py
-
+          python ./district_boundary_transform.py
       - name: Archive merging outputs
         uses: actions/upload-artifact@v4
         if: always()
@@ -53,6 +53,7 @@ jobs:
           custom_heatmap_leaflet.js \
           kdtree.js \
           filesaver.js \
+          district_boundaries.geojson \
           build/
       - name: Update resources
         uses: JamesIves/github-pages-deploy-action@v4

@@ -33,6 +33,14 @@
         clear: function() {
             return this._data = [], this
         },
+        clip: function(map, enabled) {
+            this._ctx.reset();
+            if (enabled && districtBoundaries !== null) {
+                clipCanvasToPolygons(districtBoundaries, map, this._ctx);
+                this._ctx.drawImage(this._circle, 0, 0);
+            }
+            return this
+        },
         radius: function(t, i) {
             i = i || 15;
             var a = this._circle = document.createElement("canvas"),
@@ -134,7 +142,7 @@
                 }
             }
 
-            this._heat.data(data).draw(this.options.minOpacity);
+            this._heat.data(data).clip(this._map, clipToBoundaries).draw(this.options.minOpacity);
             this._frame = null;
         },
         _animateZoom: function(t) {
