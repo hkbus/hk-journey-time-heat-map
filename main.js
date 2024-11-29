@@ -261,7 +261,10 @@ async function generateHeatmapDataWithTravelDistance(stopList, routeList, startS
                 const location = stopInfo.location;
                 const nextSteps = steps.slice();
                 const routeData = routeList[routeKey];
-                const route = `${routeData.co.join("/").toUpperCase()} ${routeData.route}`;
+                let route = `${routeData.co.join("&").toUpperCase()} ${routeData.route}`;
+                if (heatmapData.hasOwnProperty(stopId)) {
+                    route = `${route} / ${heatmapData[stopId][3].at(-1).route}`;
+                }
                 nextSteps.push({stopId: stopId, route: route});
                 heatmapData[stopId] = [location.lat, location.lng, travelTime, nextSteps];
                 stopIdData[stopId] = {travelTime: travelTime, interchangeCount: interchangeCount, steps: nextSteps};
@@ -536,6 +539,11 @@ const transitPointLayer = L.markerClusterGroup({spiderfyOnMaxZoom: false, disabl
 
 const heatmapLayer = L.heatLayer([], {radius: 20, blur: 20, maxZoom: 17, gradient: gradient}).addTo(map);
 drawHeatLegend();
+
+const layerControl = L.control.layers(null, null).addTo(map)
+    .addOverlay(droppedPinLayer, "所選地點 Selected Location")
+    .addOverlay(transitPointLayer, "車站地點 Transit Points")
+    .addOverlay(heatmapLayer, "熱圖 Heatmap");
 
 reload();
 
