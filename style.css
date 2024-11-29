@@ -132,6 +132,31 @@ html {
     font: 11px/1.5 "Helvetica Neue", Arial, Helvetica, sans-serif;
 }
 
+.leaflet-control-layers {
+    transform: translateY(198px);
+}
+
+.leaflet-control-layers-list {
+    -webkit-user-select: none; /* Safari */
+    -ms-user-select: none; /* IE 10 and IE 11 */
+    user-select: none; /* Standard syntax */
+}
+
+.marker-cluster-small div {
+    background-color: var(--bulma-white-on-scheme) !important;
+    color: var(--bulma-scheme-main);
+}
+
+.marker-cluster-medium div {
+    background-color: var(--bulma-white-on-scheme) !important;
+    color: var(--bulma-scheme-main);
+}
+
+.marker-cluster-large div {
+    background-color: var(--bulma-white-on-scheme) !important;
+    color: var(--bulma-scheme-main);
+}
+
 .options-retract {
     display: none;
 }
