@@ -59,6 +59,7 @@ function reload() {
             intensityByTravelTimeMaxTime = Number(document.getElementById("intensityByTravelTimeMaxTime").value);
             maxTransparency = Number(document.getElementById("maxTransparency").value);
             clipToBoundaries = document.getElementById("boundaries").value === "true";
+            enableAreaLayer = document.getElementById("useArea").value === "true";
             updateHeatLegend(intensityByTravelTimeMaxTime);
             if (!lastPosition) return;
             const [lat, lng] = lastPosition;
@@ -171,6 +172,11 @@ function calculateWalkTimeByDistance(distance) {
     return distance / walkingSpeedInKmPerSecond;
 }
 
+// Calculate intensity based on travel time
+function calculateIntensityByTravelTime(travelTime) {
+    return Math.max(0, 1 - (travelTime / 60) / intensityByTravelTimeMaxTime);
+}
+
 // Haversine formula to calculate the distance between two points (in kilometers)
 function getDistanceFromLatLngInKm(lat1, lng1, lat2, lng2) {
     const R = 6371; // Radius of the Earth in km
@@ -206,11 +212,6 @@ function findStopsWithinRadius(stopList, targetLat, targetLng, radiusKm) {
     }
 
     return stopsWithinRadius;
-}
-
-// Calculate intensity based on travel time
-function calculateIntensityByTravelTime(travelTime) {
-    return Math.max(0, 1 - (travelTime / 60) / intensityByTravelTimeMaxTime);
 }
 
 async function generateHeatmapDataWithTravelDistance(stopList, routeList, startStops, seenRoutes = new Set()) {
@@ -358,10 +359,13 @@ function mergeHeatmapData(map1, map2) {
 async function updateOrigin(lat = lastPosition[0], lng = lastPosition[1]) {
     document.getElementById("export-points-button").disabled = true;
     document.getElementById("export-image-button").disabled = true;
+    document.getElementById("export-area-button").disabled = true;
 
     if (!routeList || !stopList || !lat || !lng) return;
     droppedPinLayer.clearLayers();
     transitPointLayer.clearLayers();
+    areaLayer.clearLayers();
+    lastAreaGeoJson = null;
     L.marker([lat, lng]).addTo(droppedPinLayer);
     document.getElementById("origin").innerHTML = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
 
@@ -423,10 +427,65 @@ async function updateOrigin(lat = lastPosition[0], lng = lastPosition[1]) {
         });
     }
 
+    if (enableAreaLayer) {
+        const timeIntervals = [];
+        for (let min = 10; min <= intensityByTravelTimeMaxTime; min += 10) {
+            timeIntervals.push(min * 60);
+        }
+        const travelTimePolygons = generateTravelTimePolygon(timeIntervals);
+        for (const [time, polygon] of Object.entries(travelTimePolygons).toReversed()) {
+            const polygonLayer = L.geoJSON(polygon, {
+                style: {
+                    color: 'black',
+                    fillOpacity: 0,
+                    weight: 2
+                }
+            }).addTo(areaLayer);
+            polygonLayer.bindTooltip(`${time / 60} ${language === "en" ? " Mins Area" : "分鐘範圍"}`, {sticky: true});
+            polygonLayer.on('click', e => {
+                e.target.openTooltip(e.latlng); // Open the tooltip at the clicked location
+            });
+        }
+        lastAreaGeoJson = travelTimePolygons;
+    }
+
     if (journeyTimesData.length > 0) {
         document.getElementById("export-points-button").disabled = false;
         document.getElementById("export-image-button").disabled = false;
+        if (lastAreaGeoJson) {
+            document.getElementById("export-area-button").disabled = false;
+        }
     }
+}
+
+function generateTravelTimePolygon(timeIntervals) {
+    const reachablePointsByInterval = {};
+    for (let lat = hongKongBounds.minLat; lat <= hongKongBounds.maxLat; lat += gridResolutionLat) {
+        for (let lng = hongKongBounds.minLng; lng <= hongKongBounds.maxLng; lng += gridResolutionLng) {
+            const {time} = getMinTimeAt(lat, lng);
+            if (time !== null) {
+                for (const timeInterval of timeIntervals) {
+                    if (time <= timeInterval) {
+                        if (!reachablePointsByInterval.hasOwnProperty(timeInterval)) {
+                            reachablePointsByInterval[timeInterval] = [];
+                        }
+                        reachablePointsByInterval[timeInterval].push([lat, lng]);
+                    }
+                }
+            }
+        }
+    }
+    const result = {};
+    for (const [timeInterval, reachablePoints] of Object.entries(reachablePointsByInterval)) {
+        const points = turf.featureCollection(
+            reachablePoints.map(([lat, lng]) => turf.point([lng, lat]))
+        );
+        let polygon = turf.concave(points, { maxEdge: 1 });
+        polygon = turf.polygonSmooth(polygon, { iterations: 3 });
+        polygon.features.forEach(f => f.properties["journeyTime"] = timeInterval);
+        result[timeInterval] = polygon;
+    }
+    return result;
 }
 
 function getMinTimeAt(lat, lng) {
@@ -490,6 +549,29 @@ function exportGeoJson() {
     downloadGeoJSON(geojson);
 }
 
+function exportTimeArea() {
+    if (!lastAreaGeoJson) {
+        return
+    }
+    let geojson = {
+        type: "FeatureCollection",
+        features: Object.values(lastAreaGeoJson).toReversed().flatMap(e => e.features),
+    }
+    // Download the GeoJSON file
+    const downloadGeoJSON = (geojson) => {
+        const blob = new Blob([JSON.stringify(geojson, null, 2)], {
+            type: "application/json",
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'area.geojson';
+        link.click();
+    };
+    // Call the download function
+    downloadGeoJSON(geojson);
+}
+
 function exportHeatmapAsImage() {
     const width = heatmapLayer._heat._width;
     const height = heatmapLayer._heat._height;
@@ -529,6 +611,7 @@ loadJSON("./district_boundaries.geojson", geoJson => {
 let lastPosition = null;
 let lastJourneyTimes = [];
 let lastJourneyTimesTree = null;
+let lastAreaGeoJson = null;
 
 let language = "zh";
 let basemapUrl = "";
@@ -544,6 +627,14 @@ let interchangeTimes = 900;
 let interchangeTimeForTrains = 90;
 let walkableDistance = 1.5;
 let clipToBoundaries = false;
+let enableAreaLayer = false;
+
+const hongKongBounds = {
+    minLat: 22.14, maxLat: 22.57,
+    minLng: 113.83, maxLng: 114.43
+};
+const gridResolutionLat = 0.0009; // 100 meters in latitude
+const gridResolutionLng = 0.00097; // 100 meters in longitude
 
 const redIcon = L.icon({
     iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
@@ -572,10 +663,13 @@ const transitPointLayer = L.markerClusterGroup({spiderfyOnMaxZoom: false, disabl
 const heatmapLayer = L.heatLayer([], {radius: 20, blur: 20, maxZoom: 17, gradient: gradient}).addTo(map);
 drawHeatLegend();
 
+const areaLayer = L.layerGroup().addTo(map);
+
 const layerControl = L.control.layers(null, null).addTo(map)
     .addOverlay(droppedPinLayer, "所選地點 Selected Location")
     .addOverlay(transitPointLayer, "車站地點 Transit Points")
-    .addOverlay(heatmapLayer, "熱圖 Heatmap");
+    .addOverlay(heatmapLayer, "熱圖 Heatmap")
+    .addOverlay(areaLayer, "行程時間範圍 Travel Time Area");
 
 reload();
 

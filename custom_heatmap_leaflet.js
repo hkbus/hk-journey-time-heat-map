@@ -65,7 +65,7 @@
             return this._colorize(n.data, this._grad), i.putImageData(n, 0, 0), this
         },
         _colorize: function(t, i) {
-            for (var a, s = 3, e = t.length; e > s; s += 4) {
+            for (let a, s = 3, e = t.length; e > s; s += 4) {
                 a = 4 * t[s];
                 if (a) {
                     t[s - 3] = i[a];         // Red channel
