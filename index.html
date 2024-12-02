@@ -213,9 +213,10 @@
             </div>
 
             <div class="field">
-                <label class="label" for="gradient">熱圖顏色漸層<br>Heatmap Gradient</label>
-                <div class="control">
-                    <textarea class="textarea" id="gradient" name="gradient" onchange="reload();" rows="7" oninput="updateGradientValue(value);"></textarea>
+                <label class="label">熱圖顏色漸層<br>Heatmap Gradient</label>
+                <div id="gradient-picker"></div>
+                <div class="control gradient-entry" id="gradient-entry-control">
+                    <button class="button is-small gradient-add" id="gradient-add" onclick="addGradientPicker();">+</button>
                 </div>
             </div>
 

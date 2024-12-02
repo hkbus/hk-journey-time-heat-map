@@ -199,6 +199,34 @@ html {
     display: flex;
 }
 
+.gradient-entry {
+    display: flex;
+    justify-content: space-between;
+}
+
+.gradient-entry + .gradient-entry {
+    margin-top: 10px;
+}
+
+.gradient-position {
+    max-width: 30%;
+    width: 30%
+}
+
+.gradient-color {
+    max-width: 51%;
+    width: 51%;
+}
+
+.gradient-add {
+    width: 100%;
+    margin-top: 10px;
+}
+
+.gradient-remove {
+    width: 15%;
+}
+
 .error {
     border: 1px solid red !important;
     box-shadow: 0 0 0 3px #ff000054 !important;

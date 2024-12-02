@@ -58,7 +58,7 @@ function reload() {
             interchangeTimeForTrains = Number(document.getElementById("interchangeTimesForTrains").value);
             intensityByTravelTimeMaxTime = Number(document.getElementById("intensityByTravelTimeMaxTime").value);
             maxTransparency = Number(document.getElementById("maxTransparency").value);
-            gradient = JSON.parse(document.getElementById("gradient").value);
+            updateGradientPicker();
             clipToBoundaries = document.getElementById("boundaries").value === "true";
             enableAreaLayer = document.getElementById("useArea").value === "true";
             updateHeatLegend(intensityByTravelTimeMaxTime);
@@ -81,17 +81,6 @@ function updateIntensitySliderValue(value) {
 function updateMaxTransparencyValue(value) {
     document.getElementById('maxTransparencyValue').innerHTML = value;
     document.getElementById('heat-legend').style.filter = `opacity(${value})`;
-}
-
-function updateGradientValue(value) {
-    const element = document.getElementById('gradient');
-    try {
-        element.innerHTML = JSON.stringify(JSON.parse(value), null, 4);
-        drawHeatLegend();
-        element.classList.remove("error");
-    } catch (e) {
-        element.classList.add("error");
-    }
 }
 
 function flipCheckbox(value) {
@@ -128,6 +117,66 @@ function updateHeatLegend(value) {
     document.getElementById("heat-legend-3").innerHTML = `${value / 2}`;
     document.getElementById("heat-legend-4").innerHTML = `${value / 4 * 3}`;
     document.getElementById("heat-legend-5").innerHTML = `${value}`;
+}
+
+function removeGradientPicker(index) {
+    updateGradientPicker(index);
+    reload();
+}
+
+function updateGradientPicker(ignore = undefined) {
+    const newGradient = {};
+    for (let index = 1; ; index++) {
+        if (index === ignore) {
+            continue;
+        }
+        const positionElement = document.getElementById(`gradient-position-${index}`);
+        const valueElement = document.getElementById(`gradient-value-${index}`);
+        if (!positionElement || !valueElement) {
+            break;
+        }
+        if (!newGradient.hasOwnProperty(positionElement.value) || gradientPickerPriority === index) {
+            newGradient[positionElement.value] = valueElement.value;
+        }
+    }
+    if (Object.keys(newGradient).length > 0) {
+        gradient = newGradient;
+    }
+    generateGradientPicker(gradient);
+    drawHeatLegend();
+}
+
+function addGradientPicker() {
+    let newValue = 1;
+    for (const position of Object.keys(gradient).sort((a, b) => Number(b) - Number(a))) {
+        if (Number(position) === newValue) {
+            newValue = Number((newValue - 0.1).toFixed(1));
+        }
+    }
+    console.log(newValue);
+    if (newValue >= 0 && newValue <= 1) {
+        gradient[newValue] = "#FF0000";
+    }
+    generateGradientPicker(gradient);
+    reload();
+}
+
+function generateGradientPicker(value) {
+    const div = document.getElementById("gradient-picker");
+    let innerHTML = "";
+    const entries = Object.entries(value).sort(([a], [b]) => Number(b) - Number(a));
+    let counter = 1;
+    for (const [position, value] of entries) {
+        const index = counter++;
+        innerHTML += `
+         <div class="control gradient-entry" id="gradient-entry-${index}">
+            <input type="number" class="input gradient-position" id="gradient-position-${index}" min="0" max="1" step="0.1" value="${position}" onchange="gradientPickerPriority = ${index}; reload();">
+            <input type="color" class="input gradient-color" id="gradient-value-${index}" value="${value}" onchange="gradientPickerPriority = ${index}; reload();">
+            <button class="button gradient-remove" id="gradient-remove-${index}" onclick="gradientPickerPriority = null; removeGradientPicker(${index});">-</button>
+         </div>
+         `;
+    }
+    div.innerHTML = innerHTML;
 }
 
 function initMap() {
@@ -654,14 +703,15 @@ let walkableDistance = 1.5;
 let clipToBoundaries = false;
 let enableAreaLayer = false;
 let gradient = {
-    0.1: "blue",
-    0.6: "cyan",
-    0.8: "lime",
-    0.9: "yellow",
-    1.0: "red"
+    0.1: "#0000FF",
+    0.6: "#00FFFF",
+    0.8: "#00FF00",
+    0.9: "#FFFF00",
+    1.0: "#FF0000"
 }
 
-document.getElementById('gradient').innerHTML = JSON.stringify(gradient, null, 4);
+let gradientPickerPriority = null;
+generateGradientPicker(gradient);
 
 const hongKongBounds = {
     minLat: 22.14, maxLat: 22.57,
