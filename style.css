@@ -199,6 +199,11 @@ html {
     display: flex;
 }
 
+.error {
+    border: 1px solid red !important;
+    box-shadow: 0 0 0 3px #ff000054 !important;
+}
+
 .options-button {
     display: none;
     position: fixed;

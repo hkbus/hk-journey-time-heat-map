@@ -58,9 +58,12 @@ function reload() {
             interchangeTimeForTrains = Number(document.getElementById("interchangeTimesForTrains").value);
             intensityByTravelTimeMaxTime = Number(document.getElementById("intensityByTravelTimeMaxTime").value);
             maxTransparency = Number(document.getElementById("maxTransparency").value);
+            gradient = JSON.parse(document.getElementById("gradient").value);
             clipToBoundaries = document.getElementById("boundaries").value === "true";
             enableAreaLayer = document.getElementById("useArea").value === "true";
             updateHeatLegend(intensityByTravelTimeMaxTime);
+            heatmapLayer.options.gradient = gradient;
+            heatmapLayer._updateOptions();
             if (!lastPosition) return;
             const [lat, lng] = lastPosition;
             updateOrigin(lat, lng)
@@ -78,6 +81,17 @@ function updateIntensitySliderValue(value) {
 function updateMaxTransparencyValue(value) {
     document.getElementById('maxTransparencyValue').innerHTML = value;
     document.getElementById('heat-legend').style.filter = `opacity(${value})`;
+}
+
+function updateGradientValue(value) {
+    const element = document.getElementById('gradient');
+    try {
+        element.innerHTML = JSON.stringify(JSON.parse(value), null, 4);
+        drawHeatLegend();
+        element.classList.remove("error");
+    } catch (e) {
+        element.classList.add("error");
+    }
 }
 
 function flipCheckbox(value) {
@@ -639,6 +653,15 @@ let interchangeTimeForTrains = 90;
 let walkableDistance = 1.5;
 let clipToBoundaries = false;
 let enableAreaLayer = false;
+let gradient = {
+    0.1: "blue",
+    0.6: "cyan",
+    0.8: "lime",
+    0.9: "yellow",
+    1.0: "red"
+}
+
+document.getElementById('gradient').innerHTML = JSON.stringify(gradient, null, 4);
 
 const hongKongBounds = {
     minLat: 22.14, maxLat: 22.57,
@@ -661,13 +684,6 @@ const tileLayers = L.layerGroup().addTo(map);
 initMap();
 
 const droppedPinLayer = L.layerGroup().addTo(map);
-const gradient = {
-    0.1: "blue",
-    0.6: "cyan",
-    0.8: "lime",
-    0.9: "yellow",
-    1.0: "red"
-}
 
 const transitPointLayer = L.markerClusterGroup({spiderfyOnMaxZoom: false, disableClusteringAtZoom: 16}).addTo(map);
 
