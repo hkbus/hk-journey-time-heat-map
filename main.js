@@ -150,10 +150,9 @@ function addGradientPicker() {
     let newValue = 1;
     for (const position of Object.keys(gradient).sort((a, b) => Number(b) - Number(a))) {
         if (Number(position) === newValue) {
-            newValue = Number((newValue - 0.1).toFixed(1));
+            newValue = Number((newValue - 0.05).toFixed(2));
         }
     }
-    console.log(newValue);
     if (newValue >= 0 && newValue <= 1) {
         gradient[newValue] = "#FF0000";
     }
@@ -170,7 +169,7 @@ function generateGradientPicker(value) {
         const index = counter++;
         innerHTML += `
          <div class="control gradient-entry" id="gradient-entry-${index}">
-            <input type="number" class="input gradient-position" id="gradient-position-${index}" min="0" max="1" step="0.1" value="${position}" onchange="gradientPickerPriority = ${index}; reload();">
+            <input type="number" class="input gradient-position" id="gradient-position-${index}" min="0" max="1" step="0.05" value="${position}" onchange="gradientPickerPriority = ${index}; reload();">
             <input type="color" class="input gradient-color" id="gradient-value-${index}" value="${value}" onchange="gradientPickerPriority = ${index}; reload();">
             <button class="button gradient-remove" id="gradient-remove-${index}" onclick="gradientPickerPriority = null; removeGradientPicker(${index});">-</button>
          </div>
