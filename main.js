@@ -211,10 +211,10 @@ function findStopsWithinRadius(stopList, targetLat, targetLng, radiusKm) {
         }
     }
 
-    return stopsWithinRadius;
+    return stopsWithinRadius.sort(({distance: distanceA}, {distance: distanceB}) => distanceA - distanceB);
 }
 
-async function generateHeatmapDataWithTravelDistance(stopList, routeList, startStops, seenRoutes = new Set()) {
+async function generateHeatmapDataWithTravelDistance(stopList, routeList, startStops, takeFirstStop, seenRoutes = new Set()) {
     const stopSequenceList = [];
     const nextSeenRouts = [];
 
@@ -231,10 +231,22 @@ async function generateHeatmapDataWithTravelDistance(stopList, routeList, startS
                         stopsByCo = stopsByCo.toReversed();
                     }
                     let highestIndex = -1;
-                    for (const stopId of Object.keys(startStops)) {
-                        const index = stopsByCo.indexOf(stopId);
-                        if (index > highestIndex) {
-                            highestIndex = index;
+                    if (takeFirstStop === null) {
+                        for (const stopId of Object.keys(startStops)) {
+                            const index = stopsByCo.indexOf(stopId);
+                            if (index > highestIndex) {
+                                highestIndex = index;
+                            }
+                        }
+                    } else {
+                        for (const stopId of takeFirstStop) {
+                            if (startStops.hasOwnProperty(stopId)) {
+                                const index = stopsByCo.indexOf(stopId);
+                                if (index > highestIndex) {
+                                    highestIndex = index;
+                                    break;
+                                }
+                            }
                         }
                     }
                     if (highestIndex >= 0) {
@@ -341,7 +353,7 @@ async function generateHeatmapDataWithTravelDistance(stopList, routeList, startS
 
     return mergeHeatmapData(
         heatmapData,
-        await generateHeatmapDataWithTravelDistance(stopList, routeList, nextStartStops, seenRoutes)
+        await generateHeatmapDataWithTravelDistance(stopList, routeList, nextStartStops, null, seenRoutes)
     );
 }
 
@@ -374,14 +386,13 @@ async function updateOrigin(lat = lastPosition[0], lng = lastPosition[1]) {
     const heatmapData = [[lat, lng, 0]];
 
     const startStops = {};
-    stops.forEach((stop) => {
-        const {id, location, distance} = stop;
+    stops.forEach(({id, location, distance}) => {
         const walkTime = calculateWalkTimeByDistance(distance);
         journeyTimesData.push([location.lat, location.lng, walkTime, [{stopId: id, route: "walk"}]]);
         heatmapData.push([location.lat, location.lng, walkTime]);
         startStops[id] = {travelTime: walkTime, interchangeCount: 0, steps: [{stopId: id, route: "walk"}]};
     });
-    Object.values(await generateHeatmapDataWithTravelDistance(stopList, routeList, startStops)).forEach(stop => {
+    Object.values(await generateHeatmapDataWithTravelDistance(stopList, routeList, startStops, stops.map(({id}) => id))).forEach(stop => {
         const [lat, lng, journeyTime, steps] = stop;
         heatmapData.push([lat, lng, journeyTime]);
         journeyTimesData.push([lat, lng, journeyTime, steps]);
@@ -416,7 +427,7 @@ async function updateOrigin(lat = lastPosition[0], lng = lastPosition[1]) {
         const marker = L.marker([lat, lng], { icon: redIcon }).addTo(transitPointLayer);
         let popupContent = `<div style="text-align: center;">${Array.from(new Set(routes.map(r => r.join("<br>↓<br>")))).join('<br><br>')}</div>`;
         if (language !== "en") {
-            popupContent = popupContent.replace("walk", "步行");
+            popupContent = popupContent.replaceAll("walk", "步行");
         }
         marker.bindPopup(popupContent);
         marker.on('mouseover', () => {
