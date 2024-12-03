@@ -227,6 +227,14 @@ html {
     width: 15%;
 }
 
+.gradient-toggle {
+    width: 100%;
+}
+
+.gradient-section {
+    margin-top: 10px;
+}
+
 .error {
     border: 1px solid red !important;
     box-shadow: 0 0 0 3px #ff000054 !important;
