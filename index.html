@@ -214,9 +214,12 @@
 
             <div class="field">
                 <label class="label">熱圖顏色漸層<br>Heatmap Gradient</label>
-                <div id="gradient-picker"></div>
-                <div class="control gradient-entry" id="gradient-entry-control">
-                    <button class="button is-small gradient-add" id="gradient-add" onclick="addGradientPicker();">+</button>
+                <button id="gradient-toggle-button" class="button is-small gradient-toggle" onclick="toggleGradientPicker();">展示 Show</button>
+                <div class="gradient-section" id="gradient-section" style="display: none;">
+                    <div id="gradient-picker"></div>
+                    <div class="control gradient-entry" id="gradient-entry-control">
+                        <button class="button is-small gradient-add" id="gradient-add" onclick="addGradientPicker();">+</button>
+                    </div>
                 </div>
             </div>
 

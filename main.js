@@ -178,6 +178,18 @@ function generateGradientPicker(value) {
     div.innerHTML = innerHTML;
 }
 
+function toggleGradientPicker() {
+    const div = document.getElementById("gradient-section");
+    const button = document.getElementById("gradient-toggle-button");
+    if (div.style.display === "none") {
+        div.style.display = "block";
+        button.innerHTML = "隱藏 Hide";
+    } else {
+        div.style.display = "none";
+        button.innerHTML = "展示 Show";
+    }
+}
+
 function initMap() {
     tileLayers.clearLayers();
     if (basemapUrl) {
