@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+    <script src="custom_leaflet_bigimage.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
     <script src="custom_heatmap_leaflet.js"></script>
     <script src="kdtree.js"></script>
@@ -36,11 +37,11 @@
             </div>
 
             <div class="field">
-                <label class="label" for="basemapUrl">背景地圖連結<br>Basemap URL</label>
+                <label class="label" for="basemapUrl">背景地圖連結<br>Basemap URLs</label>
                 <div class="control">
-                    <input type="text" class="input" id="basemapUrl" name="basemapUrl" placeholder="正常 Default" onchange="reload();">
+                    <textarea class="textarea" id="basemapUrl" name="basemapUrl" placeholder="重置 Reset" onchange="reload();" wrap="off" rows="3"></textarea>
                 </div>
-                <p class="note">Placeholders: {x} {y} {z} {lang}: en/tc</p>
+                <p class="note">Each line is one layer<br>Placeholders: {x} {y} {z} {lang}: en/tc</p>
             </div>
 
             <div class="field">
@@ -256,12 +257,15 @@
                 <p class="note">此選項可能會增加載入時間<br>This option might significantly increase loading times.</p>
             </div>
 
-            <button class="export-image-button button is-info" id="export-image-button" onclick="exportHeatmapAsImage();" disabled>匯出熱圖 Export Heatmap (PNG)</button>
+            <label class="label">匯出<br>Export</label>
+            <button class="export-image-button button is-info" id="export-image-button" onclick="exportHeatmapAsImage();" disabled>熱圖 Heatmap (PNG)</button>
 
-            <button class="export-area-button button is-info" id="export-area-button" onclick="exportTimeArea();" disabled>匯出時間範圍 Export Area (GeoJson)</button>
+            <button class="export-image-button button is-info" id="export-image-basemap-button" onclick="exportHeatmapWithBasemapAsImage();" disabled>熱圖+地圖 Heatmap+Basemap (PNG)</button>
 
-            <button class="export-points-button button is-info" id="export-points-button" onclick="exportGeoJson();" disabled>匯出數據點 Export Points (GeoJson)</button>
-            <p class="note">Note that it might require <b>ArcGis Pro</b> to recreate the best look and feel of the heatmap if you are using ArcGis</p>
+            <button class="export-area-button button is-info" id="export-area-button" onclick="exportTimeArea();" disabled>時間範圍 Area (GeoJson)</button>
+
+            <button class="export-points-button button is-info" id="export-points-button" onclick="exportGeoJson();" disabled>數據點 Stop Points (GeoJson)</button>
+            <p class="note">Note that it might require <b>ArcGis Pro</b> to recreate the best look and feel of the heatmap via stop points data if you are using ArcGis</p>
         </div>
         <div class="map-container">
             <div class="box info-box">
