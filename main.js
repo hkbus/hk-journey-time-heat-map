@@ -33,7 +33,15 @@ function reload() {
     setTimeout(() => {
         try {
             language = document.getElementById("language").value;
-            basemapUrl = document.getElementById("basemapUrl").value;
+            if (document.getElementById("basemapUrl").value.length === 0) {
+                basemapUrls = [
+                    "https://cartodb-basemaps-a.global.ssl.fastly.net/rastertiles/voyager_nolabels/{z}/{x}/{y}.png",
+                    "https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/label/hk/{lang}/WGS84/{z}/{x}/{y}.png"
+                ];
+                document.getElementById("basemapUrl").value = basemapUrls.join("\n");
+            } else {
+                basemapUrls = document.getElementById("basemapUrl").value.split("\n");
+            }
             initMap();
             modes = new Set(Array.from(document.querySelectorAll('input[name="modes"]:checked')).map(el => el.value));
             direction = document.getElementById("direction").value;
@@ -192,19 +200,19 @@ function toggleGradientPicker() {
 
 function initMap() {
     tileLayers.clearLayers();
-    if (basemapUrl) {
-        L.tileLayer(basemapUrl.replace("{lang}", language === "en" ? "en" : "tc"), {
-            maxZoom: 19,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(tileLayers);
-    } else {
-        L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/rastertiles/voyager_nolabels/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://api.portal.hkmapservice.gov.hk/disclaimer">HKSAR Gov</a>'
-        }).addTo(tileLayers);
-        L.tileLayer('https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/label/hk/{lang}/WGS84/{z}/{x}/{y}.png'.replace("{lang}", language === "en" ? "en" : "tc"), {
-            maxZoom: 19,
-        }).addTo(tileLayers);
+    let first = true;
+    for (const basemapUrl of basemapUrls) {
+        if (first) {
+            L.tileLayer(basemapUrl.replace("{lang}", language === "en" ? "en" : "tc"), {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://api.portal.hkmapservice.gov.hk/disclaimer">HKSAR Gov</a>'
+            }).addTo(tileLayers);
+            first = false;
+        } else {
+            L.tileLayer(basemapUrl.replace("{lang}", language === "en" ? "en" : "tc"), {
+                maxZoom: 19,
+            }).addTo(tileLayers);
+        }
     }
 }
 
@@ -573,6 +581,16 @@ function generateTravelTimePolygon(timeIntervals) {
     return result;
 }
 
+function findPdd(lat, lng) {
+    const point = turf.point([lng, lat]);
+    for (const feature of pdd.features) {
+        if (turf.booleanPointInPolygon(point, feature)) {
+            return feature.properties;
+        }
+    }
+    return null;
+}
+
 function getMinTimeAt(lat, lng) {
     if (lastJourneyTimesTree === null) {
         return {time: null, steps: []};
@@ -606,18 +624,21 @@ function exportGeoJson() {
     const geojson = {
         type: "FeatureCollection",
         features: lastJourneyTimes
-            .map(([lat, lng, journeyTine]) => ({
+            .map(([lat, lng, journeyTime, steps]) => ({
                 type: "Feature",
                 properties: {
-                    intensity: calculateIntensityByTravelTime(journeyTine),
-                    journeyTine: journeyTine
+                    intensity: calculateIntensityByTravelTime(journeyTime),
+                    journeyTime: journeyTime,
+                    journeySteps: steps,
+                    stopId: steps[steps.length - 1].stopId,
+                    pdd: findPdd(lat, lng),
                 },
                 geometry: {
                     type: "Point",
                     coordinates: [lng, lat],
                 },
             }))
-            .filter(({properties}) => properties.journeyTine < Number.MAX_SAFE_INTEGER),
+            .filter(({properties}) => properties.journeyTime < Number.MAX_SAFE_INTEGER),
     };
     // Download the GeoJSON file
     const downloadGeoJSON = (geojson) => {
@@ -678,12 +699,51 @@ function exportHeatmapAsImage() {
     });
 }
 
+function exportHeatmapWithBasemapAsImage() {
+    const mapCanvas = document.createElement('canvas');
+    const mapContext = mapCanvas.getContext('2d');
+
+    const width = heatmapLayer._heat._width;
+    const height = heatmapLayer._heat._height;
+    const { lat: latUpperLeft, lng: lngUpperLeft} = heatmapLayer._map.containerPointToLatLng([0, 0]);
+    const { lat: latUpperRight, lng: lngUpperRight} = heatmapLayer._map.containerPointToLatLng([width, 0]);
+    const { lat: latLowerLeft, lng: lngLowerLeft} = heatmapLayer._map.containerPointToLatLng([0, height]);
+    const { lat: latLowerRight, lng: lngLowerRight} = heatmapLayer._map.containerPointToLatLng([width, height]);
+
+    mapCanvas.width = width;
+    mapCanvas.height = height;
+
+    bigImageLayer._print().then(basemapCanvas => {
+        // Render the base tile layers
+        mapContext.drawImage(basemapCanvas, 0, 0, width, height);
+
+        // Render the heatmap layer
+        const heatmapCanvas = heatmapLayer._heat._canvas;
+        mapContext.drawImage(heatmapCanvas, 0, 0, width, height);
+
+        // Export the combined canvas
+        mapCanvas.toBlob(function(blob) {
+            saveAs(blob, "heatmap_basemap.png");
+
+            const meta = {
+                "UpperLeft": [latUpperLeft, lngUpperLeft],
+                "UpperRight": [latUpperRight, lngUpperRight],
+                "LowerLeft": [latLowerLeft, lngLowerLeft],
+                "LowerRight": [latLowerRight, lngLowerRight],
+            }
+            const metaBlob = new Blob([JSON.stringify(meta, null, 4)], {type: "text/plain;charset=utf-8"});
+            saveAs(metaBlob, "heatmap_basemap.json");
+        });
+    });
+}
+
 // ==============================
 
 let routeList = null;
 let stopList = null;
 let journeyTimes = null;
 let districtBoundaries = null;
+let pdd = null;
 loadJSON("./routeTimeList.min.json", dataSheet => {
     routeList = dataSheet.routeList;
     stopList = dataSheet.stopList;
@@ -692,6 +752,9 @@ loadJSON("./routeTimeList.min.json", dataSheet => {
 loadJSON("./district_boundaries.geojson", geoJson => {
     districtBoundaries = geoJson;
 });
+loadJSON("./pdd.geojson", geoJson => {
+    pdd = geoJson;
+});
 
 let lastPosition = null;
 let lastJourneyTimes = [];
@@ -699,7 +762,10 @@ let lastJourneyTimesTree = null;
 let lastAreaGeoJson = null;
 
 let language = "zh";
-let basemapUrl = "";
+let basemapUrls = [
+    "https://cartodb-basemaps-a.global.ssl.fastly.net/rastertiles/voyager_nolabels/{z}/{x}/{y}.png",
+    "https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/label/hk/{lang}/WGS84/{z}/{x}/{y}.png"
+];
 let modes = new Set(["kmb", "ctb", "nlb", "gmb", "mtr", "lightRail", "lrtfeeder", "hkkf", "sunferry", "fortuneferry"]);
 let direction = "departing-from";
 let weekday = "N";
@@ -758,6 +824,8 @@ const layerControl = L.control.layers(null, null).addTo(map)
     .addOverlay(transitPointLayer, "車站地點 Transit Points")
     .addOverlay(heatmapLayer, "熱圖 Heatmap")
     .addOverlay(areaLayer, "行程時間範圍 Travel Time Area");
+
+const bigImageLayer = L.control.bigImage({position: 'topright'}).addTo(map);
 
 reload();
 
