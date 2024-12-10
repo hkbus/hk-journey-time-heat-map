@@ -453,6 +453,7 @@ function mergeHeatmapData(map1, map2) {
 async function updateOrigin(lat = lastPosition[0], lng = lastPosition[1]) {
     document.getElementById("export-points-button").disabled = true;
     document.getElementById("export-image-button").disabled = true;
+    document.getElementById("export-image-basemap-button").disabled = true;
     document.getElementById("export-area-button").disabled = true;
 
     if (!routeList || !stopList || !lat || !lng) return;
@@ -545,6 +546,7 @@ async function updateOrigin(lat = lastPosition[0], lng = lastPosition[1]) {
     if (journeyTimesData.length > 0) {
         document.getElementById("export-points-button").disabled = false;
         document.getElementById("export-image-button").disabled = false;
+        document.getElementById("export-image-basemap-button").disabled = false;
         if (lastAreaGeoJson) {
             document.getElementById("export-area-button").disabled = false;
         }
