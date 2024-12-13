@@ -748,19 +748,28 @@ async function getSHA256Hash(input) {
     return hashArray.map((item) => item.toString(16).padStart(2, "0")).join("");
 }
 
-async function executeIfPasswordCorrect(block) {
+function checkPassword() {
     const passwordElement = document.getElementById("password");
-    if (await getSHA256Hash(passwordElement.value) === exportPasswordHash) {
-        block();
-    } else {
-        passwordElement.classList.add("error");
-        alert("密碼錯誤 Incorrect password");
-    }
+    getSHA256Hash(passwordElement.value).then(hash => {
+        if (hash === exportPasswordHash) {
+            document.getElementById("password-blocker").style.display = "none";
+            document.getElementById("password-dialog").style.display = "none";
+        } else {
+            passwordElement.classList.add("error");
+            alert("密碼錯誤 Incorrect password");
+        }
+    });
 }
 
 // ==============================
 
 const exportPasswordHash = "b92a1ffdc416f6f67e0a32f459e2b652504adba390017c29f3538b7b494172df";
+
+document.getElementById("password").addEventListener("keyup", event => {
+    if (event.key === "Enter") {
+        checkPassword();
+    }
+});
 
 let routeList = null;
 let stopList = null;
