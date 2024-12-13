@@ -258,13 +258,18 @@
             </div>
 
             <label class="label">匯出<br>Export</label>
-            <button class="export-image-button button is-info" id="export-image-button" onclick="exportHeatmapAsImage();" disabled>熱圖 Heatmap (PNG)</button>
 
-            <button class="export-image-button button is-info" id="export-image-basemap-button" onclick="exportHeatmapWithBasemapAsImage();" disabled>熱圖+地圖 Heatmap+Basemap (PNG)</button>
+            <div class="control export-password">
+                <input type="password" class="input" id="password" name="password" placeholder="密碼 Password" onchange="document.getElementById('password').classList.remove('error');">
+            </div>
 
-            <button class="export-area-button button is-info" id="export-area-button" onclick="exportTimeArea();" disabled>時間範圍 Area (GeoJson)</button>
+            <button class="export-image-button button is-info" id="export-image-button" onclick="executeIfPasswordCorrect(exportHeatmapAsImage);" disabled>熱圖 Heatmap (PNG)</button>
 
-            <button class="export-points-button button is-info" id="export-points-button" onclick="exportGeoJson();" disabled>數據點 Stop Points (GeoJson)</button>
+            <button class="export-image-button button is-info" id="export-image-basemap-button" onclick="executeIfPasswordCorrect(exportHeatmapWithBasemapAsImage);" disabled>熱圖+地圖 Heatmap+Basemap (PNG)</button>
+
+            <button class="export-area-button button is-info" id="export-area-button" onclick="executeIfPasswordCorrect(exportTimeArea);" disabled>時間範圍 Area (GeoJson)</button>
+
+            <button class="export-points-button button is-info" id="export-points-button" onclick="executeIfPasswordCorrect(exportGeoJson);" disabled>數據點 Stop Points (GeoJson)</button>
             <p class="note">Note that it might require <b>ArcGis Pro</b> to recreate the best look and feel of the heatmap via stop points data if you are using ArcGis</p>
         </div>
         <div class="map-container">

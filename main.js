@@ -741,6 +741,27 @@ function exportHeatmapWithBasemapAsImage() {
 
 // ==============================
 
+async function getSHA256Hash(input) {
+    const textAsBuffer = new TextEncoder().encode(input);
+    const hashBuffer = await window.crypto.subtle.digest("SHA-256", textAsBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map((item) => item.toString(16).padStart(2, "0")).join("");
+}
+
+async function executeIfPasswordCorrect(block) {
+    const passwordElement = document.getElementById("password");
+    if (await getSHA256Hash(passwordElement.value) === exportPasswordHash) {
+        block();
+    } else {
+        passwordElement.classList.add("error");
+        alert("密碼錯誤 Incorrect password");
+    }
+}
+
+// ==============================
+
+const exportPasswordHash = "b92a1ffdc416f6f67e0a32f459e2b652504adba390017c29f3538b7b494172df";
+
 let routeList = null;
 let stopList = null;
 let journeyTimes = null;
