@@ -776,15 +776,15 @@ let stopList = null;
 let journeyTimes = null;
 let districtBoundaries = null;
 let pdd = null;
-loadJSON("./routeTimeList.min.json", dataSheet => {
+loadJSON("https://jt.hkbus.app/routeTimeList.min.json", dataSheet => {
     routeList = dataSheet.routeList;
     stopList = dataSheet.stopList;
     journeyTimes = dataSheet.journeyTimes;
 });
-loadJSON("./district_boundaries.geojson", geoJson => {
+loadJSON("https://jt.hkbus.app/district_boundaries.geojson", geoJson => {
     districtBoundaries = geoJson;
 });
-loadJSON("./pdd.geojson", geoJson => {
+loadJSON("https://jt.hkbus.app/pdd.geojson", geoJson => {
     pdd = geoJson;
 });
 
